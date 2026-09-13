@@ -47,6 +47,7 @@
   let ambientEnabled = true
   let ambientBlockedUntil = 0
   let pageVisible = true
+  let startupMuted = false
 
   function createCircles() {
     return track.map((time, index) => index === track.length - 1
@@ -460,10 +461,9 @@
       playbackFallbackTimer = null
       onplaybackstart()
       circles = createCircles()
-      const initialTimelineElapsed = Math.max(
-        0,
-        (nextAudio.currentTime - timelineCueSeconds) * 1000,
-      )
+      const initialTimelineElapsed = startupMuted
+        ? (startupPlaybackCueSeconds - timelineCueSeconds) * 1000
+        : Math.max(0, (nextAudio.currentTime - timelineCueSeconds) * 1000)
       startedAt = Date.now() - initialTimelineElapsed
       playbackVolumeStartedAt = Date.now()
       const finalStartupWaveEnd = Math.max(
@@ -480,6 +480,11 @@
       audioStopTimer = window.setTimeout(() => {
         nextAudio.pause()
       }, Math.max(0, 6200 - initialTimelineElapsed))
+    }
+
+    if (startupMuted) {
+      startAnimation()
+      return
     }
 
     const playFromCue = () => {
@@ -499,6 +504,11 @@
     nextAudio.addEventListener("error", startAnimation, { once: true })
     if (nextAudio.readyState >= HTMLMediaElement.HAVE_METADATA) playFromCue()
     else nextAudio.addEventListener("loadedmetadata", playFromCue, { once: true })
+  }
+
+  export function setStartupMuted(muted) {
+    startupMuted = Boolean(muted)
+    if (startupMuted) audio?.pause()
   }
 
   function playStartup() {

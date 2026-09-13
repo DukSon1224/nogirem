@@ -54,6 +54,9 @@ contextBridge.exposeInMainWorld("nogirem", {
   },
   beginStartupReveal: () => ipcRenderer.invoke("application:begin-startup-reveal"),
   getLaunchContext: () => ipcRenderer.invoke("application:get-launch-context"),
+  setStartupMusicSetting: muted => {
+    return ipcRenderer.invoke("application:set-startup-music-setting", muted)
+  },
   exportDiagnosticLogs: () => ipcRenderer.invoke("application:export-diagnostic-logs"),
   openBugReportForm: () => ipcRenderer.invoke("application:open-bug-report-form"),
   getStartupTraySetting: () => ipcRenderer.invoke("application:get-startup-tray-setting"),

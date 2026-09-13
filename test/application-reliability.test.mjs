@@ -307,6 +307,32 @@ test("시작 이미지와 음악이 실패하거나 지연되어도 시작 애�
   )
 })
 
+test("고급 기능에서 시작 음악을 음소거하고 다음 실행에도 유지한다", () => {
+  assert.match(
+    electronMain,
+    /function startupMusicSettingPath\(\)[\s\S]*async function getStartupMusicSetting\(\)[\s\S]*async function setStartupMusicSetting\(muted\)/,
+  )
+  assert.match(
+    electronMain,
+    /application:get-launch-context[\s\S]*startupMusicMuted: startupMusic\.muted/,
+  )
+  assert.match(electronMain, /application:set-startup-music-setting/)
+  assert.match(electronPreload, /setStartupMusicSetting/)
+  assert.match(
+    applicationView,
+    /시작 음악 음소거[\s\S]*프로그램을 실행할 때 나오는 시작 음악을 재생하지 않습니다/,
+  )
+  assert.match(
+    applicationView,
+    /gameWave\?\.setStartupMuted\(startupMusicMuted\)[\s\S]*gameWave\?\.allowStartup\(\)/,
+  )
+  assert.match(
+    gameWave,
+    /if \(startupMuted\) \{[\s\S]*startAnimation\(\)[\s\S]*return[\s\S]*nextAudio\.play\(\)/,
+  )
+  assert.match(gameWave, /export function setStartupMuted\(muted\)/)
+})
+
 test("초기 부스트 상태가 확인되기 전에는 일시정지 배경으로 전환하지 않는다", () => {
   assert.match(
     applicationView,

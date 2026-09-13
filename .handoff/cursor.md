@@ -1,11 +1,12 @@
 # Cursor AI Handoff
 
-Last Updated: 2026-09-13 12:34
+Last Updated: 2026-09-13 13:05
 
 ## Current Objective
-배포된 0.3.11의 RX 570 레거시 Radeon 그래픽 설정 개선을 대상 환경에서 재검증한다.
+고급 기능에서 프로그램 시작 음악을 선택적으로 음소거하고 설정을 다음 실행에도 유지한다.
 
 ## Current Status
+- 고급 기능에 `시작 음악 음소거` 토글을 추가하고 AppData의 `startup-music.json`에 저장한다. main process가 launch context에 저장값을 포함하고 renderer는 시작 애니메이션을 허용하기 전에 GameWave에 전달하므로 실행 직후 음악이 잠깐 재생되지 않는다. 음소거 상태에서도 기존 시작 애니메이션 시간축은 유지하고 `ost.mp3` 재생만 생략하며, 실행 중 음소거로 전환하면 재생 중인 오디오도 즉시 멈춘다. 0.3.12 변경 기록에 반영했고 전체 Node 테스트 159개, 주요 모듈 구문 검사, 프로덕션 앱 빌드와 lint가 통과했다.
 - 커밋 `4313e8e`과 태그 `v0.3.11`을 원격에 푸시하고 [GitHub Release](https://github.com/rubystarashe/nogirem/releases/tag/v0.3.11)로 정식 공개했다. 릴리스는 draft·prerelease가 아니며 installer·blockmap·`latest.yml`·터보 키 helper 네 자산의 원격 크기와 GitHub SHA-256 digest가 로컬 검증값과 일치하고 공개 URL은 모두 HTTP 200이다. 배포 시점의 원격 `master`, 태그와 릴리스 커밋도 `4313e8e`로 일치한다.
 - 앱과 lockfile 버전을 0.3.11로 올리고 Windows x64 NSIS 설치본을 만들었다. 전체 Node 테스트 158개, 주요 모듈 구문 검사, 프로덕션 앱 빌드, input guard·Radeon·recorder·터보 키 helper Release 빌드와 패키징이 통과했고 lint 오류가 없다. Radeon helper 기본·레거시 모드는 모두 JSON과 종료 코드 0을 반환했다. 세 C++ helper에는 외부 MSVCP/VCRUNTIME 의존성이 없고 패키지 내부 바이너리가 빌드 산출물과 일치한다. 설치본은 96,781,035바이트·SHA-256 `58098300…EFDF4`, blockmap은 102,827바이트·`58C1A508…DAC2`, `latest.yml`은 345바이트·`0142AC6F…535`, 터보 키 helper는 291,840바이트·`D9504362…6A857`이다. `latest.yml`의 설치본 크기·SHA-512와 패키지 내부 버전 0.3.11 및 REPORT 답변 포함 상태도 확인했다.
 - 해당 RX 570 진단 고유값을 대상으로 `Radeon 그래픽 설정 오류 확인 및 개선` 답변을 `REPORT.json`에 추가하고 커밋 `8352a00`으로 원격 `master`에 게시했다. 원격 Raw 문서에서도 동일한 답변을 확인했다. 0.3.11에서 종료 과정과 비정상 종료 결과 복구를 개선했으며, 업데이트 후 재시도하고 계속 실패하면 새 16진수 종료 코드와 진단을 다시 보내 달라는 내용이다. 반영 버전은 0.3.11, 만료는 답변 후 7일이다. 한 PC가 소유한 복수 진단에 미확인 답변이 있으면 `REPORT.json` 순서대로 모두 대기열에 추가하고 한 번에 하나의 모달을 표시하며, 현재 답변 확인 시 확인 상태를 저장하고 즉시 다음 모달로 넘어간다. REPORT 테스트 4개가 통과했다.
@@ -1537,4 +1538,4 @@ Last Updated: 2026-09-13 12:34
 - 정확 재인코딩의 첫 PCM sample 내부에서 요청 시점 전 frame을 제거해 AAC frame 경계의 최대 약 21ms 선행도 없앴다. 실제 비정렬 시작점 추출은 통과했지만 실행 중 recorder 잠금 때문에 배포용 local bin 갱신은 남아 있다.
 
 ## Next Recommended Step
-RX 570·드라이버 `31.0.21923.11000` 환경에서 0.3.11 그래픽 설정 조회·적용을 실행한다. 계속 실패하면 화면과 새 진단에 표시되는 16진수 helper 종료 코드로 추가 우회 여부를 결정한다.
+개발 앱에서 `시작 음악 음소거`를 켠 뒤 재실행해 무음 애니메이션과 설정 유지 상태를 체감 확인한다. 다음 배포 요청 시 0.3.12로 패키징한다.

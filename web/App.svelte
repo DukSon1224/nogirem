@@ -146,6 +146,10 @@
   let startupTraySettingLoaded = false
   let startupTrayAction = null
   let startupTrayNotice = ""
+  let startupMusicMuted = false
+  let startupMusicSettingLoaded = false
+  let startupMusicAction = null
+  let startupMusicNotice = ""
   let turboKeyEnabled = false
   let turboKeyRunning = false
   let turboKeyInstalled = false
@@ -958,6 +962,21 @@
       startupTrayNotice = messageOf(error)
     } finally {
       startupTrayAction = null
+    }
+  }
+
+  async function toggleStartupMusicMute() {
+    if (!startupMusicSettingLoaded || startupMusicAction) return
+    startupMusicAction = "saving"
+    startupMusicNotice = ""
+    try {
+      const state = await window.nogirem.setStartupMusicSetting(!startupMusicMuted)
+      startupMusicMuted = Boolean(state.muted)
+      gameWave?.setStartupMuted(startupMusicMuted)
+    } catch (error) {
+      startupMusicNotice = messageOf(error)
+    } finally {
+      startupMusicAction = null
     }
   }
 
@@ -1842,8 +1861,11 @@
         blackboxSettingLoaded = true
       })
     void window.nogirem.getLaunchContext()
-      .catch(() => ({ startupTray: false }))
+      .catch(() => ({ startupTray: false, startupMusicMuted: false }))
       .then(launchContext => {
+        startupMusicMuted = Boolean(launchContext.startupMusicMuted)
+        startupMusicSettingLoaded = true
+        gameWave?.setStartupMuted(startupMusicMuted)
         startupDataReady = true
         if (launchContext.startupTray) {
           startupAnimationFinished = true
@@ -2511,6 +2533,25 @@
                   </div>
                   {#if startupTrayNotice}
                     <span class="developer-tool-status">{startupTrayNotice}</span>
+                  {/if}
+                  <div class="developer-tool-row">
+                    <div>
+                      <h2>시작 음악 음소거</h2>
+                      <p>프로그램을 실행할 때 나오는 시작 음악을 재생하지 않습니다</p>
+                    </div>
+                    <button
+                      class:active={startupMusicMuted}
+                      disabled={!startupMusicSettingLoaded || startupMusicAction}
+                      aria-pressed={startupMusicMuted}
+                      onclick={toggleStartupMusicMute}
+                    >
+                      {startupMusicAction === "saving"
+                        ? "저장 중…"
+                        : (startupMusicMuted ? "사용 중" : "사용하기")}
+                    </button>
+                  </div>
+                  {#if startupMusicNotice}
+                    <span class="developer-tool-status">{startupMusicNotice}</span>
                   {/if}
                   <div class="developer-tool-stack">
                     <div>

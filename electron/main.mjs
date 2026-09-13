@@ -806,6 +806,23 @@ function creatorPromptStatePath() {
   return join(app.getPath("userData"), "creator", "prompt.json")
 }
 
+function startupMusicSettingPath() {
+  return join(app.getPath("userData"), "startup-music.json")
+}
+
+async function getStartupMusicSetting() {
+  const setting = await readJson(startupMusicSettingPath())
+  return { muted: setting?.muted === true }
+}
+
+async function setStartupMusicSetting(muted) {
+  await writeJsonAtomic(startupMusicSettingPath(), {
+    muted,
+    updatedAt: new Date().toISOString(),
+  })
+  return getStartupMusicSetting()
+}
+
 async function readCreatorPromptDismissed() {
   const state = await readJson(creatorPromptStatePath())
   return Math.max(0, Number(state?.displayCount) || 0) >= 3
@@ -5476,11 +5493,24 @@ function registerIpc() {
       beginPrimaryWindowReveal()
     }
   })
-  ipcMain.handle("application:get-launch-context", event => {
+  ipcMain.handle("application:get-launch-context", async event => {
     if (BrowserWindow.fromWebContents(event.sender) !== primaryWindow) {
       throw new Error("허용되지 않은 실행 상태 요청입니다")
     }
-    return { startupTray: startupTrayLaunch || primaryRendererRecoveryMode }
+    const startupMusic = await getStartupMusicSetting()
+    return {
+      startupTray: startupTrayLaunch || primaryRendererRecoveryMode,
+      startupMusicMuted: startupMusic.muted,
+    }
+  })
+  ipcMain.handle("application:set-startup-music-setting", (event, muted) => {
+    if (BrowserWindow.fromWebContents(event.sender) !== primaryWindow) {
+      throw new Error("허용되지 않은 시작 음악 설정 변경 요청입니다")
+    }
+    if (typeof muted !== "boolean") {
+      throw new Error("시작 음악 설정 값이 올바르지 않습니다")
+    }
+    return setStartupMusicSetting(muted)
   })
   ipcMain.handle("application:export-diagnostic-logs", event => {
     if (BrowserWindow.fromWebContents(event.sender) !== primaryWindow) {
