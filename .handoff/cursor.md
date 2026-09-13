@@ -1,11 +1,13 @@
 # Cursor AI Handoff
 
-Last Updated: 2026-09-13 13:54
+Last Updated: 2026-09-14 01:22
 
 ## Current Objective
-앱 업데이트 후 Windows 시작 시 트레이 실행 설정이 해제되지 않도록 보존하고 자동 복구한다.
+0.3.11 업데이트 후 보고된 화면 깜빡임과 오디오 노이즈의 앱 관련성을 진단한다.
 
 ## Current Status
+- 화면 깜빡임 제보의 첨부 경로는 ZIP이 아닌 0바이트 파일이라 시스템·GPU·앱 상태를 확인할 수 없다. 최소화는 메인 Electron 창과 보조 창을 숨기거나 파괴할 뿐 그래픽 설정·DXVK·affinity를 다시 적용하지 않고, 0.3.11 변경도 RX 500 Radeon helper 종료 처리에 한정되므로 현재 증거로 업데이트 회귀를 확정할 수 없다. 원본 진단 ZIP이 필요하다.
+- 오디오 노이즈 진단은 Ryzen 5 5600X 6C/12T, RTX 3060·591.86, 정상 적용된 DXVK v3.1 환경이다. 블랙박스·터보 키·Alt+Enter 방지는 꺼져 있고 메모리 helper는 여유 메모리 약 18GB로 정리를 실행하지 않았으며 패스트핑 확인도 어댑터를 재시작하지 않았다. 앱은 Windows 오디오 형식·볼륨·드라이버를 변경하지 않고 `C:\Windows`의 `audiodg.exe`도 affinity 대상에서 제외한다. 다만 프레임 부스트가 게임에 물리 4코어, 사용자 백그라운드에 물리 2코어를 배정하면서 Discord·Game Bar·Logitech 앱을 `0xF`로 제한했다. 특정 앱 소리만 지직거리면 이 제한의 간접 영향 가능성이 있고, 전체 시스템 소리나 HDMI 오디오가 지직거리면 DXVK의 GPU 부하 변화와 NVIDIA·오디오 드라이버 DPC 지연 가능성을 분리해야 한다. 부스트만 끈 상태와 Vulkan만 끈 상태의 교차 재현 결과 없이는 원인을 확정하거나 affinity 예외를 추가하지 않는다.
 - 현재 PC의 `Mabinogi Rem Booster Startup` 예약 작업이 실제로 사라진 상태를 확인했다. 원인은 electron-builder 업데이트가 이전 설치본의 `customUnInstall`도 실행하는데 기존 스크립트가 업데이트와 실제 제거를 구분하지 않고 작업 스케줄러 항목을 삭제한 것이다. 새 설치 프로그램은 업데이트 시작 전에 기존 작업 유무를 HKCU 선호값에 보존하고 `${isUpdated}`일 때 제거를 건너뛴다. 앱은 기존의 정상 작업을 선호값으로 마이그레이션하며, 선호값이 켜져 있는데 작업이 누락·비활성·이전 실행 경로 상태이면 현재 설치 경로로 다시 등록한다. 실제 앱 제거 또는 사용자가 기능을 끌 때만 작업과 선호값을 함께 삭제한다. 0.3.12 변경 기록에 반영했고 전체 Node 테스트 160개, main 구문 검사, 프로덕션 앱 빌드, 수정된 NSIS 설치본 컴파일과 lint가 통과했다.
 - 고급 기능에 `시작 음악 음소거` 토글을 추가하고 AppData의 `startup-music.json`에 저장한다. main process가 launch context에 저장값을 포함하고 renderer는 시작 애니메이션을 허용하기 전에 GameWave에 전달하므로 실행 직후 음악이 잠깐 재생되지 않는다. 음소거 상태에서도 기존 시작 애니메이션 시간축은 유지하고 `ost.mp3` 재생만 생략하며, 실행 중 음소거로 전환하면 재생 중인 오디오도 즉시 멈춘다. 0.3.12 변경 기록에 반영했고 전체 Node 테스트 159개, 주요 모듈 구문 검사, 프로덕션 앱 빌드와 lint가 통과했다.
 - 커밋 `4313e8e`과 태그 `v0.3.11`을 원격에 푸시하고 [GitHub Release](https://github.com/rubystarashe/nogirem/releases/tag/v0.3.11)로 정식 공개했다. 릴리스는 draft·prerelease가 아니며 installer·blockmap·`latest.yml`·터보 키 helper 네 자산의 원격 크기와 GitHub SHA-256 digest가 로컬 검증값과 일치하고 공개 URL은 모두 HTTP 200이다. 배포 시점의 원격 `master`, 태그와 릴리스 커밋도 `4313e8e`로 일치한다.
@@ -1539,4 +1541,4 @@ Last Updated: 2026-09-13 13:54
 - 정확 재인코딩의 첫 PCM sample 내부에서 요청 시점 전 frame을 제거해 AAC frame 경계의 최대 약 21ms 선행도 없앴다. 실제 비정렬 시작점 추출은 통과했지만 실행 중 recorder 잠금 때문에 배포용 local bin 갱신은 남아 있다.
 
 ## Next Recommended Step
-0.3.12 업데이트 설치 전후로 트레이 시작 작업과 HKCU 선호값이 유지되는지 실제 설치본에서 확인한다. 현재 이미 사라진 작업은 기능을 한 번 다시 켜면 복구되며 이후 업데이트부터 자동 보존된다.
+화면 깜빡임 제보의 실제 진단 ZIP을 다시 받고, 오디오 노이즈는 `부스트 끔·Vulkan 켬`과 `부스트 켬·Vulkan 끔` 상태를 각각 재현해 발생 조건과 출력 장치가 HDMI·USB·내장 오디오 중 무엇인지 확인한다.
