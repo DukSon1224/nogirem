@@ -125,6 +125,7 @@ const directDonationUrl = "https://thedirectdonation.org/"
 const operationPolicyUrl = "https://mabinogi.nexon.com/page/archive/guide_view.asp?id=4889849&num=7&playtarget=1"
 const bugReportFormUrl = "https://docs.google.com/forms/d/e/1FAIpQLSfx6-QVqsxgUDKsYCMAyg7A51ZYBMrMa_17OGzzQF_gGOum1w/viewform?usp=publish-editor"
 const startupTrayTaskName = "Mabinogi Rem Booster Startup"
+const startupTrayRegistryPath = "HKCU:\\Software\\Nogirem"
 const startupTrayLaunch = process.argv.includes("--startup-tray")
 const applicationUpdateStallTimeoutMs = 45_000
 const primaryRendererUnresponsiveTimeoutMs = 5_000
@@ -2274,41 +2275,32 @@ async function relaunchAsAdministrator() {
   }
 }
 
-async function getStartupTraySetting() {
-  if (!app.isPackaged) {
-    return {
-      supported: false,
-      enabled: false,
-      reason: "설치된 앱에서만 사용할 수 있습니다",
-    }
-  }
+async function readStartupTrayTaskState() {
   const script = [
+    `$preference = Get-ItemProperty -Path ${quotePowerShellLiteral(startupTrayRegistryPath)} -Name 'StartupTrayEnabled' -ErrorAction SilentlyContinue`,
+    "$preferred = $null -ne $preference -and $preference.StartupTrayEnabled -eq 1",
     `$task = Get-ScheduledTask -TaskName ${quotePowerShellLiteral(startupTrayTaskName)} -ErrorAction SilentlyContinue`,
     "if ($null -eq $task) {",
-    "  [pscustomobject]@{ exists = $false; enabled = $false; matches = $false } | ConvertTo-Json -Compress",
+    "  [pscustomobject]@{ exists = $false; enabled = $false; matches = $false; preferred = $preferred } | ConvertTo-Json -Compress",
     "  exit 0",
     "}",
     "$action = @($task.Actions)[0]",
-    `[pscustomobject]@{ exists = $true; enabled = $task.State -ne 'Disabled'; matches = ($action.Execute -ieq ${quotePowerShellLiteral(process.execPath)} -and $action.Arguments -eq '--startup-tray') } | ConvertTo-Json -Compress`,
+    `[pscustomobject]@{ exists = $true; enabled = $task.State -ne 'Disabled'; matches = ($action.Execute -ieq ${quotePowerShellLiteral(process.execPath)} -and $action.Arguments -eq '--startup-tray'); preferred = $preferred } | ConvertTo-Json -Compress`,
   ].join("\n")
   const { stdout } = await execFileAsync(
     "powershell.exe",
     ["-NoProfile", "-NonInteractive", "-Command", script],
     { windowsHide: true, timeout: 15000 },
   )
-  const state = JSON.parse(stdout.trim())
-  return {
-    supported: true,
-    enabled: Boolean(state.exists && state.enabled && state.matches),
-    reason: state.exists && !state.matches ? "등록된 실행 경로가 현재 설치 위치와 다릅니다" : null,
-  }
+  return JSON.parse(stdout.trim())
 }
 
-async function setStartupTraySetting(enabled) {
-  if (!app.isPackaged) throw new Error("설치된 앱에서만 사용할 수 있습니다")
+async function applyStartupTraySetting(enabled) {
   const script = enabled
     ? [
         "$ErrorActionPreference = 'Stop'",
+        `New-Item -Path ${quotePowerShellLiteral(startupTrayRegistryPath)} -Force | Out-Null`,
+        `New-ItemProperty -Path ${quotePowerShellLiteral(startupTrayRegistryPath)} -Name 'StartupTrayEnabled' -PropertyType DWord -Value 1 -Force | Out-Null`,
         "$userId = [Security.Principal.WindowsIdentity]::GetCurrent().Name",
         `$action = New-ScheduledTaskAction -Execute ${quotePowerShellLiteral(process.execPath)} -Argument '--startup-tray'`,
         "$trigger = New-ScheduledTaskTrigger -AtLogOn -User $userId",
@@ -2322,12 +2314,49 @@ async function setStartupTraySetting(enabled) {
         "if ($null -ne $task) {",
         `  Unregister-ScheduledTask -TaskName ${quotePowerShellLiteral(startupTrayTaskName)} -Confirm:$false`,
         "}",
+        `Remove-ItemProperty -Path ${quotePowerShellLiteral(startupTrayRegistryPath)} -Name 'StartupTrayEnabled' -ErrorAction SilentlyContinue`,
       ].join("\n")
   await execFileAsync(
     "powershell.exe",
     ["-NoProfile", "-NonInteractive", "-Command", script],
     { windowsHide: true, timeout: 30000 },
   )
+}
+
+async function getStartupTraySetting() {
+  if (!app.isPackaged) {
+    return {
+      supported: false,
+      enabled: false,
+      reason: "설치된 앱에서만 사용할 수 있습니다",
+    }
+  }
+  let state = await readStartupTrayTaskState()
+  const valid = Boolean(state.exists && state.enabled && state.matches)
+  if (state.preferred || valid) {
+    try {
+      if (!state.preferred || !valid) {
+        await applyStartupTraySetting(true)
+        state = await readStartupTrayTaskState()
+      }
+    } catch (error) {
+      return {
+        supported: true,
+        enabled: valid,
+        reason: `Windows 시작 설정 자동 복구 실패: ${error?.message ?? error}`,
+      }
+    }
+  }
+  return {
+    supported: true,
+    enabled: Boolean(state.exists && state.enabled && state.matches),
+    reason: state.exists && !state.matches ? "등록된 실행 경로가 현재 설치 위치와 다릅니다" : null,
+  }
+}
+
+async function setStartupTraySetting(enabled) {
+  if (!app.isPackaged) throw new Error("설치된 앱에서만 사용할 수 있습니다")
+  await applyStartupTraySetting(enabled)
   const state = await getStartupTraySetting()
   if (state.enabled !== Boolean(enabled)) {
     throw new Error("Windows 시작 프로그램 설정을 확인하지 못했습니다")

@@ -1,11 +1,12 @@
 # Cursor AI Handoff
 
-Last Updated: 2026-09-13 13:05
+Last Updated: 2026-09-13 13:54
 
 ## Current Objective
-고급 기능에서 프로그램 시작 음악을 선택적으로 음소거하고 설정을 다음 실행에도 유지한다.
+앱 업데이트 후 Windows 시작 시 트레이 실행 설정이 해제되지 않도록 보존하고 자동 복구한다.
 
 ## Current Status
+- 현재 PC의 `Mabinogi Rem Booster Startup` 예약 작업이 실제로 사라진 상태를 확인했다. 원인은 electron-builder 업데이트가 이전 설치본의 `customUnInstall`도 실행하는데 기존 스크립트가 업데이트와 실제 제거를 구분하지 않고 작업 스케줄러 항목을 삭제한 것이다. 새 설치 프로그램은 업데이트 시작 전에 기존 작업 유무를 HKCU 선호값에 보존하고 `${isUpdated}`일 때 제거를 건너뛴다. 앱은 기존의 정상 작업을 선호값으로 마이그레이션하며, 선호값이 켜져 있는데 작업이 누락·비활성·이전 실행 경로 상태이면 현재 설치 경로로 다시 등록한다. 실제 앱 제거 또는 사용자가 기능을 끌 때만 작업과 선호값을 함께 삭제한다. 0.3.12 변경 기록에 반영했고 전체 Node 테스트 160개, main 구문 검사, 프로덕션 앱 빌드, 수정된 NSIS 설치본 컴파일과 lint가 통과했다.
 - 고급 기능에 `시작 음악 음소거` 토글을 추가하고 AppData의 `startup-music.json`에 저장한다. main process가 launch context에 저장값을 포함하고 renderer는 시작 애니메이션을 허용하기 전에 GameWave에 전달하므로 실행 직후 음악이 잠깐 재생되지 않는다. 음소거 상태에서도 기존 시작 애니메이션 시간축은 유지하고 `ost.mp3` 재생만 생략하며, 실행 중 음소거로 전환하면 재생 중인 오디오도 즉시 멈춘다. 0.3.12 변경 기록에 반영했고 전체 Node 테스트 159개, 주요 모듈 구문 검사, 프로덕션 앱 빌드와 lint가 통과했다.
 - 커밋 `4313e8e`과 태그 `v0.3.11`을 원격에 푸시하고 [GitHub Release](https://github.com/rubystarashe/nogirem/releases/tag/v0.3.11)로 정식 공개했다. 릴리스는 draft·prerelease가 아니며 installer·blockmap·`latest.yml`·터보 키 helper 네 자산의 원격 크기와 GitHub SHA-256 digest가 로컬 검증값과 일치하고 공개 URL은 모두 HTTP 200이다. 배포 시점의 원격 `master`, 태그와 릴리스 커밋도 `4313e8e`로 일치한다.
 - 앱과 lockfile 버전을 0.3.11로 올리고 Windows x64 NSIS 설치본을 만들었다. 전체 Node 테스트 158개, 주요 모듈 구문 검사, 프로덕션 앱 빌드, input guard·Radeon·recorder·터보 키 helper Release 빌드와 패키징이 통과했고 lint 오류가 없다. Radeon helper 기본·레거시 모드는 모두 JSON과 종료 코드 0을 반환했다. 세 C++ helper에는 외부 MSVCP/VCRUNTIME 의존성이 없고 패키지 내부 바이너리가 빌드 산출물과 일치한다. 설치본은 96,781,035바이트·SHA-256 `58098300…EFDF4`, blockmap은 102,827바이트·`58C1A508…DAC2`, `latest.yml`은 345바이트·`0142AC6F…535`, 터보 키 helper는 291,840바이트·`D9504362…6A857`이다. `latest.yml`의 설치본 크기·SHA-512와 패키지 내부 버전 0.3.11 및 REPORT 답변 포함 상태도 확인했다.
@@ -1538,4 +1539,4 @@ Last Updated: 2026-09-13 13:05
 - 정확 재인코딩의 첫 PCM sample 내부에서 요청 시점 전 frame을 제거해 AAC frame 경계의 최대 약 21ms 선행도 없앴다. 실제 비정렬 시작점 추출은 통과했지만 실행 중 recorder 잠금 때문에 배포용 local bin 갱신은 남아 있다.
 
 ## Next Recommended Step
-개발 앱에서 `시작 음악 음소거`를 켠 뒤 재실행해 무음 애니메이션과 설정 유지 상태를 체감 확인한다. 다음 배포 요청 시 0.3.12로 패키징한다.
+0.3.12 업데이트 설치 전후로 트레이 시작 작업과 HKCU 선호값이 유지되는지 실제 설치본에서 확인한다. 현재 이미 사라진 작업은 기능을 한 번 다시 켜면 복구되며 이후 업데이트부터 자동 보존된다.

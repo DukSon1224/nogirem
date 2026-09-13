@@ -53,12 +53,25 @@
   ${endIf}
 !macroend
 
+!macro customInit
+  nsExec::ExecToStack '"$SYSDIR\schtasks.exe" /Query /TN "Mabinogi Rem Booster Startup"'
+  Pop $0
+  Pop $1
+  ${if} $0 == 0
+    WriteRegDWORD HKCU "Software\Nogirem" "StartupTrayEnabled" 1
+  ${endIf}
+!macroend
+
 !macro customInstall
   StrCpy $launchLink "$INSTDIR\${APP_EXECUTABLE_FILENAME}"
 !macroend
 
 !macro customUnInstall
-  nsExec::ExecToStack '"$SYSDIR\schtasks.exe" /Delete /TN "Mabinogi Rem Booster Startup" /F'
-  Pop $0
-  Pop $1
+  ${IfNot} ${isUpdated}
+    nsExec::ExecToStack '"$SYSDIR\schtasks.exe" /Delete /TN "Mabinogi Rem Booster Startup" /F'
+    Pop $0
+    Pop $1
+    DeleteRegValue HKCU "Software\Nogirem" "StartupTrayEnabled"
+    DeleteRegKey /ifempty HKCU "Software\Nogirem"
+  ${EndIf}
 !macroend
