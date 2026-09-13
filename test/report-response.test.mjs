@@ -42,6 +42,26 @@ test("자신이 추출한 진단 로그의 미확인 답변만 선택한다", ()
   assert.deepEqual(selected.map(item => item.responseId), ["response-1"])
 })
 
+test("복수 리포트 답변은 문서 순서대로 모두 선택한다", () => {
+  const document = normalizeReportResponseDocument({
+    schemaVersion: 1,
+    responses: [
+      response({ responseId: "first" }),
+      response({ reportId: otherReportId, responseId: "second" }),
+      response({ responseId: "third" }),
+    ],
+  })
+
+  const selected = selectOwnedReportResponses(
+    document,
+    [ownedReportId, otherReportId],
+    [],
+    Date.parse("2026-09-13T00:00:00.000Z"),
+  )
+
+  assert.deepEqual(selected.map(item => item.responseId), ["first", "second", "third"])
+})
+
 test("답변 시각이 7일 지난 항목을 정리한다", () => {
   const document = normalizeReportResponseDocument({
     schemaVersion: 1,
@@ -78,6 +98,13 @@ test("REPORT 조회와 모달이 시작 및 업데이트 확인에 연결된다"
   assert.match(preloadSource, /onReportResponsesAvailable/)
   assert.match(appSource, /report-response-content/)
   assert.match(appSource, /리포트 고유값/)
+  assert.match(appSource, /activeApplicationReportResponse = applicationReportResponses\[0\]/)
+  assert.match(appSource, /applicationReportResponses = applicationReportResponses\.slice\(1\)/)
   assert.match(packageInfo, /"REPORT\.json"/)
-  assert.equal(normalizeReportResponseDocument(reportDocument).responses.length, 0)
+  const normalizedReport = normalizeReportResponseDocument(reportDocument)
+  assert.equal(normalizedReport.responses.length, 1)
+  assert.equal(
+    normalizedReport.responses[0].reportId,
+    "7d02ca27-fe34-4a4a-a698-dd2a5ddba0c2",
+  )
 })

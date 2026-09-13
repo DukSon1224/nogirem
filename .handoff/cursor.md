@@ -1,11 +1,12 @@
 # Cursor AI Handoff
 
-Last Updated: 2026-09-13 12:03
+Last Updated: 2026-09-13 12:12
 
 ## Current Objective
-0.3.10의 RX 570 레거시 Radeon 그래픽 설정 helper 반복 종료를 복구하고 진단 가능하게 만든다.
+RX 570 레거시 Radeon 그래픽 설정 오류의 분석·개선 답변을 해당 진단 제출 PC에 전달한다.
 
 ## Current Status
+- 해당 RX 570 진단 고유값을 대상으로 `Radeon 그래픽 설정 오류 확인 및 개선` 답변을 `REPORT.json`에 추가했다. 0.3.11에서 종료 과정과 비정상 종료 결과 복구를 개선했으며, 업데이트 후 재시도하고 계속 실패하면 새 16진수 종료 코드와 진단을 다시 보내 달라는 내용이다. 반영 버전은 0.3.11, 만료는 답변 후 7일이다. 한 PC가 소유한 복수 진단에 미확인 답변이 있으면 `REPORT.json` 순서대로 모두 대기열에 추가하고 한 번에 하나의 모달을 표시하며, 현재 답변 확인 시 확인 상태를 저장하고 즉시 다음 모달로 넘어간다. REPORT 테스트 4개가 통과했다.
 - 0.3.10 진단은 Windows 10 19045, Ryzen 5 3500, Radeon RX 570, 드라이버 `31.0.21923.11000`으로 이전 0.3.7 제보와 같은 환경이다. 화면에는 기본 실행 뒤 `radeon-helper.exe --legacy-driver` 재시도까지 `Command failed`로 끝났지만 진단 로그에는 helper의 종료 코드·stdout·stderr가 없어 ADLX 호출 중 종료인지 결과 출력 뒤 종료 정리 문제인지 확정할 수 없다. helper가 ADLX 인터페이스를 명시 해제하고 결과를 flush한 다음 `ExitProcess`로 정적 소멸자를 건너뛰게 해 결과 출력 뒤 종료 실패를 제거했다. Electron은 비정상 종료 오류의 stdout에 완성된 JSON이 있으면 결과를 복구하고, 출력이 없으면 실제 16진수 종료 코드를 표시한다. 새 helper의 기본·레거시 실행은 모두 JSON과 종료 코드 0을 반환했고 269,824바이트·SHA-256 `97B41C95…934050`이다. Radeon 테스트 8개, 전체 Node 테스트 157개, 구문 검사, 프로덕션 앱 빌드와 lint가 통과했다. 실제 RX 570 환경에서 재검증이 필요하며 0.3.11 변경 기록에 반영했다.
 - 0.3.10을 커밋 `f68ee8d`에서 Windows x64 NSIS로 빌드해 [GitHub Release](https://github.com/rubystarashe/nogirem/releases/tag/v0.3.10)로 정식 공개했다. 전체 Node 테스트 154개, 프로덕션 앱 빌드, input guard·Radeon·recorder·터보 키 helper Release 빌드와 패키징이 통과했고 lint 오류가 없다. 설치본은 96,738,373바이트·SHA-256 `80A18A4D…A80B89`, blockmap은 102,421바이트·`454CB53D…C9E7AA`, `latest.yml`은 345바이트·`7940FE25…A3A9E6`, 터보 키 helper는 291,840바이트·`D9504362…16A857`이며 GitHub SHA-256 digest와 일치한다. 원격 `latest.yml`의 installer 크기·SHA-512도 게시 파일과 일치하고, 배포 recorder와 패키지 내부 파일은 `07F15D4E…630464`로 일치한다.
 - affinity helper가 `config.pollIntervalMs=5000` 주기로 프로세스를 감시할 때 PID·이름 목록을 얻으려고 매번 `powershell.exe Get-Process`를 실행해 작업 관리자에 PowerShell이 켜졌다 꺼졌다 했다. 경로·시작 시각·세션 ID는 이미 Win32 API로 조회하고 있었으므로 목록도 `CreateToolhelp32Snapshot`과 `Process32FirstW`·`Process32NextW`로 교체해 감시 주기의 외부 프로세스 생성을 제거했다. 현재 프로세스를 포함한 실제 목록 조회는 약 19ms에 완료된다. affinity 테스트 17개, 전체 Node 테스트 154개, 구문 검사, 프로덕션 앱 빌드와 lint가 통과했으며 0.3.10 변경 기록에 반영했다.
@@ -1534,4 +1535,4 @@ Last Updated: 2026-09-13 12:03
 - 정확 재인코딩의 첫 PCM sample 내부에서 요청 시점 전 frame을 제거해 AAC frame 경계의 최대 약 21ms 선행도 없앴다. 실제 비정렬 시작점 추출은 통과했지만 실행 중 recorder 잠금 때문에 배포용 local bin 갱신은 남아 있다.
 
 ## Next Recommended Step
-0.3.11 설치본을 RX 570·드라이버 `31.0.21923.11000` 환경에서 실행해 그래픽 조회·적용을 확인한다. 여전히 실패하면 새 화면과 진단에 표시되는 16진수 helper 종료 코드로 ADLX 호출 단계의 추가 우회 여부를 결정한다.
+`REPORT.json` 답변 커밋을 원격 `master`에 푸시해 대상 PC에 전달한다. 이후 0.3.11 설치본을 RX 570·드라이버 `31.0.21923.11000` 환경에서 실행하고, 계속 실패하면 새 16진수 종료 코드로 추가 우회 여부를 결정한다.

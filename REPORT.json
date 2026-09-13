@@ -1,5 +1,15 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-12T14:44:00.000Z",
-  "responses": []
+  "generatedAt": "2026-09-13T03:09:00.000Z",
+  "responses": [
+    {
+      "reportId": "7d02ca27-fe34-4a4a-a698-dd2a5ddba0c2",
+      "responseId": "radeon-legacy-helper-20260913",
+      "answeredAt": "2026-09-13T03:09:00.000Z",
+      "expiresAt": "2026-09-20T03:09:00.000Z",
+      "title": "Radeon 그래픽 설정 오류 확인 및 개선",
+      "message": "진단에서 Radeon RX 570 레거시 드라이버 환경의 그래픽 설정 helper가 레거시 모드 재시도 후에도 종료되는 문제를 확인했습니다. 결과 출력 후 종료 과정과 비정상 종료 결과 복구를 개선했습니다. 0.3.11 업데이트 후 다시 시도해 주세요. 계속 실패하면 새로 표시되는 16진수 종료 코드와 함께 진단 로그를 다시 보내 주세요.",
+      "minimumVersion": "0.3.11"
+    }
+  ]
 }
