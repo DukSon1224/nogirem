@@ -1,11 +1,12 @@
 # Cursor AI Handoff
 
-Last Updated: 2026-09-13 12:12
+Last Updated: 2026-09-13 12:31
 
 ## Current Objective
-RX 570 레거시 Radeon 그래픽 설정 개선을 0.3.11 설치본으로 준비하고 대상 환경에서 재검증한다.
+RX 570 레거시 Radeon 그래픽 설정 개선을 포함한 0.3.11 설치본을 정식 배포한다.
 
 ## Current Status
+- 앱과 lockfile 버전을 0.3.11로 올리고 Windows x64 NSIS 설치본을 만들었다. 전체 Node 테스트 158개, 주요 모듈 구문 검사, 프로덕션 앱 빌드, input guard·Radeon·recorder·터보 키 helper Release 빌드와 패키징이 통과했고 lint 오류가 없다. Radeon helper 기본·레거시 모드는 모두 JSON과 종료 코드 0을 반환했다. 세 C++ helper에는 외부 MSVCP/VCRUNTIME 의존성이 없고 패키지 내부 바이너리가 빌드 산출물과 일치한다. 설치본은 96,781,035바이트·SHA-256 `58098300…EFDF4`, blockmap은 102,827바이트·`58C1A508…DAC2`, `latest.yml`은 345바이트·`0142AC6F…535`, 터보 키 helper는 291,840바이트·`D9504362…6A857`이다. `latest.yml`의 설치본 크기·SHA-512와 패키지 내부 버전 0.3.11 및 REPORT 답변 포함 상태도 확인했다.
 - 해당 RX 570 진단 고유값을 대상으로 `Radeon 그래픽 설정 오류 확인 및 개선` 답변을 `REPORT.json`에 추가하고 커밋 `8352a00`으로 원격 `master`에 게시했다. 원격 Raw 문서에서도 동일한 답변을 확인했다. 0.3.11에서 종료 과정과 비정상 종료 결과 복구를 개선했으며, 업데이트 후 재시도하고 계속 실패하면 새 16진수 종료 코드와 진단을 다시 보내 달라는 내용이다. 반영 버전은 0.3.11, 만료는 답변 후 7일이다. 한 PC가 소유한 복수 진단에 미확인 답변이 있으면 `REPORT.json` 순서대로 모두 대기열에 추가하고 한 번에 하나의 모달을 표시하며, 현재 답변 확인 시 확인 상태를 저장하고 즉시 다음 모달로 넘어간다. REPORT 테스트 4개가 통과했다.
 - 0.3.10 진단은 Windows 10 19045, Ryzen 5 3500, Radeon RX 570, 드라이버 `31.0.21923.11000`으로 이전 0.3.7 제보와 같은 환경이다. 화면에는 기본 실행 뒤 `radeon-helper.exe --legacy-driver` 재시도까지 `Command failed`로 끝났지만 진단 로그에는 helper의 종료 코드·stdout·stderr가 없어 ADLX 호출 중 종료인지 결과 출력 뒤 종료 정리 문제인지 확정할 수 없다. helper가 ADLX 인터페이스를 명시 해제하고 결과를 flush한 다음 `ExitProcess`로 정적 소멸자를 건너뛰게 해 결과 출력 뒤 종료 실패를 제거했다. Electron은 비정상 종료 오류의 stdout에 완성된 JSON이 있으면 결과를 복구하고, 출력이 없으면 실제 16진수 종료 코드를 표시한다. 새 helper의 기본·레거시 실행은 모두 JSON과 종료 코드 0을 반환했고 269,824바이트·SHA-256 `97B41C95…934050`이다. Radeon 테스트 8개, 전체 Node 테스트 157개, 구문 검사, 프로덕션 앱 빌드와 lint가 통과했다. 실제 RX 570 환경에서 재검증이 필요하며 0.3.11 변경 기록에 반영했다.
 - 0.3.10을 커밋 `f68ee8d`에서 Windows x64 NSIS로 빌드해 [GitHub Release](https://github.com/rubystarashe/nogirem/releases/tag/v0.3.10)로 정식 공개했다. 전체 Node 테스트 154개, 프로덕션 앱 빌드, input guard·Radeon·recorder·터보 키 helper Release 빌드와 패키징이 통과했고 lint 오류가 없다. 설치본은 96,738,373바이트·SHA-256 `80A18A4D…A80B89`, blockmap은 102,421바이트·`454CB53D…C9E7AA`, `latest.yml`은 345바이트·`7940FE25…A3A9E6`, 터보 키 helper는 291,840바이트·`D9504362…16A857`이며 GitHub SHA-256 digest와 일치한다. 원격 `latest.yml`의 installer 크기·SHA-512도 게시 파일과 일치하고, 배포 recorder와 패키지 내부 파일은 `07F15D4E…630464`로 일치한다.
@@ -1535,4 +1536,4 @@ RX 570 레거시 Radeon 그래픽 설정 개선을 0.3.11 설치본으로 준비
 - 정확 재인코딩의 첫 PCM sample 내부에서 요청 시점 전 frame을 제거해 AAC frame 경계의 최대 약 21ms 선행도 없앴다. 실제 비정렬 시작점 추출은 통과했지만 실행 중 recorder 잠금 때문에 배포용 local bin 갱신은 남아 있다.
 
 ## Next Recommended Step
-0.3.11 설치본을 패키징한 뒤 RX 570·드라이버 `31.0.21923.11000` 환경에서 실행한다. 계속 실패하면 새 16진수 종료 코드로 추가 우회 여부를 결정한다.
+0.3.11 준비 변경을 커밋하고 태그·GitHub Release와 검증된 네 자산을 게시한 뒤 원격 무결성을 확인한다.
