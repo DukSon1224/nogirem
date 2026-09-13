@@ -139,6 +139,9 @@ test("트레이 진입은 보조 창을 종료하고 복귀는 메인 창을 한
   const restoreStart = focusSource.indexOf("if (restoringFromTray) {")
   const restoreEnd = focusSource.indexOf("\n  if (!window.isVisible())", restoreStart)
   const restoreSource = focusSource.slice(restoreStart, restoreEnd)
+  const minimizeStart = electronMain.indexOf("function minimizePrimaryWindowToTray()")
+  const minimizeEnd = electronMain.indexOf("function isPrimaryWindowVisuallyActive()", minimizeStart)
+  const minimizeSource = electronMain.slice(minimizeStart, minimizeEnd)
 
   assert.match(
     electronMain,
@@ -147,6 +150,10 @@ test("트레이 진입은 보조 창을 종료하고 복귀는 메인 창을 한
   assert.match(
     electronMain,
     /function minimizePrimaryWindowToTray\(\)[\s\S]*closeInternalWindowsForTray\(\)[\s\S]*primaryWindow\.hide\(\)/,
+  )
+  assert.ok(
+    minimizeSource.indexOf("primaryWindow.hide()")
+      < minimizeSource.indexOf("primaryWindow.setSkipTaskbar(true)"),
   )
   assert.match(focusSource, /setEnabled\(true\)[\s\S]*setFocusable\(true\)[\s\S]*setIgnoreMouseEvents\(false\)/)
   assert.match(restoreSource, /window\.show\(\)[\s\S]*writeWindowDiagnostics\("트레이 복귀 직후 창 상태"\)[\s\S]*return/)

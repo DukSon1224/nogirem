@@ -6813,9 +6813,9 @@ function minimizePrimaryWindowToTray() {
   primaryWindowDiagnosticsTimer = null
   ensureApplicationTray()
   closeInternalWindowsForTray()
+  primaryWindow.hide()
   primaryWindow.setSkipTaskbar(true)
   primaryWindowSkippedFromTaskbar = true
-  primaryWindow.hide()
   notifyPrimaryVisualActivity()
   return true
 }
