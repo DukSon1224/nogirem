@@ -102,9 +102,12 @@ test("REPORT 조회와 모달이 시작 및 업데이트 확인에 연결된다"
   assert.match(appSource, /applicationReportResponses = applicationReportResponses\.slice\(1\)/)
   assert.match(packageInfo, /"REPORT\.json"/)
   const normalizedReport = normalizeReportResponseDocument(reportDocument)
-  assert.equal(normalizedReport.responses.length, 1)
-  assert.equal(
-    normalizedReport.responses[0].reportId,
-    "7d02ca27-fe34-4a4a-a698-dd2a5ddba0c2",
+  assert.deepEqual(
+    normalizedReport.responses.map(responseItem => responseItem.reportId),
+    [
+      "7d02ca27-fe34-4a4a-a698-dd2a5ddba0c2",
+      "bb7e3120-d921-41c7-befd-cca75357079b",
+      "24a8f331-8892-4ec0-9b59-d5ddd014fd92",
+    ],
   )
 })
