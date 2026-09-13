@@ -1,10 +1,16 @@
 import assert from "node:assert/strict"
+import { readFile } from "node:fs/promises"
 import test from "node:test"
 import {
   createRadeonManager,
   normalizeRadeonResult,
   runRadeonHelperWithFallback,
 } from "../src/radeon.mjs"
+
+const nativeSource = await readFile(
+  new URL("../native/radeon-helper/main.cpp", import.meta.url),
+  "utf8",
+)
 
 function helperResult(overrides = {}) {
   return {
@@ -118,4 +124,32 @@ test("Radeon helper 비정상 종료 시 레거시 드라이버 모드로 재시
     ["--apply"],
     ["--legacy-driver", "--apply"],
   ])
+})
+
+test("Radeon helper가 결과 출력 후 종료되면 JSON 결과를 복구한다", async () => {
+  const error = new Error("helper exit")
+  error.code = 3221225477
+  error.stdout = JSON.stringify(helperResult())
+
+  const result = await runRadeonHelperWithFallback(async () => {
+    throw error
+  }, false)
+
+  assert.equal(result.detected, true)
+})
+
+test("Radeon helper가 두 번 모두 출력 없이 종료되면 종료 코드를 안내한다", async () => {
+  await assert.rejects(
+    () => runRadeonHelperWithFallback(async () => {
+      const error = new Error("helper exit")
+      error.code = 3221225477
+      throw error
+    }, false),
+    /종료 코드 0xC0000005/,
+  )
+})
+
+test("Radeon helper는 결과 출력 후 정적 종료 정리 없이 프로세스를 끝낸다", () => {
+  assert.match(nativeSource, /std::fflush\(nullptr\)/)
+  assert.match(nativeSource, /ExitProcess\(static_cast<UINT>\(exitCode\)\)/)
 })

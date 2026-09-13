@@ -1,11 +1,12 @@
 # Cursor AI Handoff
 
-Last Updated: 2026-09-13 03:04
+Last Updated: 2026-09-13 12:03
 
 ## Current Objective
-0.3.10 Windows 설치본과 자동 업데이트 자산을 검증해 GitHub에 정식 배포한다.
+0.3.10의 RX 570 레거시 Radeon 그래픽 설정 helper 반복 종료를 복구하고 진단 가능하게 만든다.
 
 ## Current Status
+- 0.3.10 진단은 Windows 10 19045, Ryzen 5 3500, Radeon RX 570, 드라이버 `31.0.21923.11000`으로 이전 0.3.7 제보와 같은 환경이다. 화면에는 기본 실행 뒤 `radeon-helper.exe --legacy-driver` 재시도까지 `Command failed`로 끝났지만 진단 로그에는 helper의 종료 코드·stdout·stderr가 없어 ADLX 호출 중 종료인지 결과 출력 뒤 종료 정리 문제인지 확정할 수 없다. helper가 ADLX 인터페이스를 명시 해제하고 결과를 flush한 다음 `ExitProcess`로 정적 소멸자를 건너뛰게 해 결과 출력 뒤 종료 실패를 제거했다. Electron은 비정상 종료 오류의 stdout에 완성된 JSON이 있으면 결과를 복구하고, 출력이 없으면 실제 16진수 종료 코드를 표시한다. 새 helper의 기본·레거시 실행은 모두 JSON과 종료 코드 0을 반환했고 269,824바이트·SHA-256 `97B41C95…934050`이다. Radeon 테스트 8개, 전체 Node 테스트 157개, 구문 검사, 프로덕션 앱 빌드와 lint가 통과했다. 실제 RX 570 환경에서 재검증이 필요하며 0.3.11 변경 기록에 반영했다.
 - 0.3.10을 커밋 `f68ee8d`에서 Windows x64 NSIS로 빌드해 [GitHub Release](https://github.com/rubystarashe/nogirem/releases/tag/v0.3.10)로 정식 공개했다. 전체 Node 테스트 154개, 프로덕션 앱 빌드, input guard·Radeon·recorder·터보 키 helper Release 빌드와 패키징이 통과했고 lint 오류가 없다. 설치본은 96,738,373바이트·SHA-256 `80A18A4D…A80B89`, blockmap은 102,421바이트·`454CB53D…C9E7AA`, `latest.yml`은 345바이트·`7940FE25…A3A9E6`, 터보 키 helper는 291,840바이트·`D9504362…16A857`이며 GitHub SHA-256 digest와 일치한다. 원격 `latest.yml`의 installer 크기·SHA-512도 게시 파일과 일치하고, 배포 recorder와 패키지 내부 파일은 `07F15D4E…630464`로 일치한다.
 - affinity helper가 `config.pollIntervalMs=5000` 주기로 프로세스를 감시할 때 PID·이름 목록을 얻으려고 매번 `powershell.exe Get-Process`를 실행해 작업 관리자에 PowerShell이 켜졌다 꺼졌다 했다. 경로·시작 시각·세션 ID는 이미 Win32 API로 조회하고 있었으므로 목록도 `CreateToolhelp32Snapshot`과 `Process32FirstW`·`Process32NextW`로 교체해 감시 주기의 외부 프로세스 생성을 제거했다. 현재 프로세스를 포함한 실제 목록 조회는 약 19ms에 완료된다. affinity 테스트 17개, 전체 Node 테스트 154개, 구문 검사, 프로덕션 앱 빌드와 lint가 통과했으며 0.3.10 변경 기록에 반영했다.
 - 0.3.9를 커밋 `acce555`에서 Windows x64 NSIS로 빌드해 [GitHub Release](https://github.com/rubystarashe/nogirem/releases/tag/v0.3.9)로 정식 공개했다. 전체 Node 테스트 153개, 프로덕션 앱 빌드, input guard·Radeon·recorder·터보 키 helper Release 빌드와 패키징이 통과했고 lint 오류가 없다. 검증된 단일 빌드 자산을 직접 게시해 electron-builder 릴리스 생성 경합과 `latest.yml` 재빌드 불일치를 피했다. 설치본은 96,729,805바이트·SHA-256 `86EBF818…B70015`, blockmap은 102,439바이트·`A07B23F7…A6E23C`, `latest.yml`은 342바이트·`47386512…818FD7`, 터보 키 helper는 291,840바이트·`D9504362…16A857`이며 GitHub SHA-256 digest와 일치한다. 원격 `latest.yml`의 installer 크기·SHA-512도 게시 파일과 일치한다. 배포 recorder와 패키지 내부 파일은 `40F8DB9C…38519`, `asarUnpack` MUO는 원본과 `8710993D…C1A4E`로 일치한다.
@@ -1533,4 +1534,4 @@ Last Updated: 2026-09-13 03:04
 - 정확 재인코딩의 첫 PCM sample 내부에서 요청 시점 전 frame을 제거해 AAC frame 경계의 최대 약 21ms 선행도 없앴다. 실제 비정렬 시작점 추출은 통과했지만 실행 중 recorder 잠금 때문에 배포용 local bin 갱신은 남아 있다.
 
 ## Next Recommended Step
-0.3.10 자동 업데이트와 신규 설치를 확인하고, 부스트를 켠 채 작업 관리자에서 PowerShell이 5초마다 나타나지 않는지 실기기로 검증한다.
+0.3.11 설치본을 RX 570·드라이버 `31.0.21923.11000` 환경에서 실행해 그래픽 조회·적용을 확인한다. 여전히 실패하면 새 화면과 진단에 표시되는 16진수 helper 종료 코드로 ADLX 호출 단계의 추가 우회 여부를 결정한다.

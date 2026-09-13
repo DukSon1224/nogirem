@@ -2,6 +2,10 @@
 
 사용자용 요약은 [VERSION_HISTORY.md](VERSION_HISTORY.md)에서 확인할 수 있습니다.
 
+## 0.3.11
+
+- Windows 10·Ryzen 5 3500·Radeon RX 570·드라이버 `31.0.21923.11000` 환경에서 0.3.10의 기본 ADLX 실행과 `--legacy-driver` 재시도가 모두 `Command failed`로 끝났다. 기존 SEH는 주 스레드의 접근 위반만 처리해 ADLX 결과 출력 뒤 종료 정리에서 프로세스가 실패하는 경로는 복구하지 못했다. helper는 명시적으로 ADLX 인터페이스를 해제한 뒤 출력을 flush하고 `ExitProcess`로 정적 소멸자 실행 없이 종료한다. Electron은 helper가 비정상 종료했더라도 stdout에 완성된 JSON 결과가 있으면 이를 복구해 사용하고, 결과가 전혀 없을 때는 실행 명령 대신 실제 16진수 종료 코드를 안내한다.
+
 ## 0.3.10
 
 - affinity helper가 부스트 상태를 5초마다 갱신할 때 프로세스 PID와 이름을 얻으려고 매번 `powershell.exe Get-Process`를 실행해 작업 관리자에 PowerShell이 반복 표시됐다. 실행 경로·시작 시각·세션 ID는 이미 Win32 API로 조회하고 있었으므로 목록 열거도 `CreateToolhelp32Snapshot`과 `Process32FirstW`·`Process32NextW`로 교체했다. affinity 감시 중 외부 프로세스를 생성하지 않으며 현재 프로세스를 포함한 네이티브 목록 조회는 약 19ms에 완료됐다.

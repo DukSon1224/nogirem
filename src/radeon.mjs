@@ -146,11 +146,22 @@ export async function runRadeonHelperWithFallback(execute, apply) {
       return JSON.parse(stdout.trim())
     } catch (error) {
       if (error instanceof SyntaxError) throw error
+      const recoveredOutput = String(error?.stdout ?? "").trim()
+      if (recoveredOutput) {
+        try {
+          return JSON.parse(recoveredOutput)
+        } catch {
+        }
+      }
       if (!initialError) {
         initialError = error
         continue
       }
-      throw error
+      const numericCode = Number(error?.code)
+      const exitCode = Number.isInteger(numericCode)
+        ? `0x${(numericCode >>> 0).toString(16).padStart(8, "0").toUpperCase()}`
+        : String(error?.code ?? error?.signal ?? "알 수 없음")
+      throw new Error(`Radeon 설정 helper가 비정상 종료되었습니다 (종료 코드 ${exitCode})`)
     }
   }
   throw initialError

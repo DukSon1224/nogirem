@@ -307,9 +307,10 @@ int runHelper(int argc, char** argv)
 int main(int argc, char** argv)
 {
     SetConsoleOutputCP(CP_UTF8);
+    int exitCode = 0;
     __try
     {
-        return runHelper(argc, argv);
+        exitCode = runHelper(argc, argv);
     }
     __except (EXCEPTION_EXECUTE_HANDLER)
     {
@@ -319,7 +320,10 @@ int main(int argc, char** argv)
             "\\uc2e4\\ud589 \\uc911 \\uc624\\ub958\\uac00 \\ubc1c\\uc0dd"
             "\\ud588\\uc2b5\\ub2c8\\ub2e4 (0x%08lX)\"}\n",
             GetExceptionCode());
-        std::fflush(stdout);
-        return 0;
+        exitCode = 0;
     }
+    std::cout.flush();
+    std::cerr.flush();
+    std::fflush(nullptr);
+    ExitProcess(static_cast<UINT>(exitCode));
 }
