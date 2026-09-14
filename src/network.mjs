@@ -1,8 +1,5 @@
-import { execFile } from "node:child_process"
 import { setTimeout as delay } from "node:timers/promises"
-import { promisify } from "node:util"
-
-const execFileAsync = promisify(execFile)
+import { runPowerShellScript } from "./powershell.mjs"
 
 const fastPingValues = {
   TcpAckFrequency: 1,
@@ -136,11 +133,10 @@ $noDelay = if (
 async function runPowerShell(applyFastPing) {
   const script = `$applyFastPing = $${applyFastPing ? "true" : "false"}\n${queryScript}`
   try {
-    const { stdout } = await execFileAsync(
-      "powershell.exe",
-      ["-NoProfile", "-NonInteractive", "-Command", script],
-      { windowsHide: true, maxBuffer: 1024 * 1024, timeout: 30000 },
-    )
+    const { stdout } = await runPowerShellScript(script, {
+      maxBuffer: 1024 * 1024,
+      timeout: 30000,
+    })
     return JSON.parse(stdout.trim())
   } catch (error) {
     const detail = error.stderr?.trim() || error.message
@@ -213,11 +209,10 @@ foreach ($endpoint in @("https://www.microsoft.com", "https://api.github.com")) 
 } | ConvertTo-Json -Compress
 `
   try {
-    const { stdout } = await execFileAsync(
-      "powershell.exe",
-      ["-NoProfile", "-NonInteractive", "-Command", script],
-      { windowsHide: true, maxBuffer: 1024 * 1024, timeout: 15000 },
-    )
+    const { stdout } = await runPowerShellScript(script, {
+      maxBuffer: 1024 * 1024,
+      timeout: 15000,
+    })
     return JSON.parse(stdout.trim())
   } catch (error) {
     const detail = error.stderr?.trim() || error.message
@@ -321,11 +316,10 @@ $adapter = Get-NetAdapter -IncludeHidden -ErrorAction SilentlyContinue |
 `
 
   try {
-    const { stdout } = await execFileAsync(
-      "powershell.exe",
-      ["-NoProfile", "-NonInteractive", "-Command", script],
-      { windowsHide: true, maxBuffer: 1024 * 1024, timeout: 30000 },
-    )
+    const { stdout } = await runPowerShellScript(script, {
+      maxBuffer: 1024 * 1024,
+      timeout: 30000,
+    })
     return JSON.parse(stdout.trim())
   } catch (error) {
     const detail = error.stderr?.trim() || error.message
@@ -370,11 +364,10 @@ if ($adapter.Status -ne "Up") {
 `
 
   try {
-    const { stdout } = await execFileAsync(
-      "powershell.exe",
-      ["-NoProfile", "-NonInteractive", "-Command", script],
-      { windowsHide: true, maxBuffer: 1024 * 1024, timeout: 30000 },
-    )
+    const { stdout } = await runPowerShellScript(script, {
+      maxBuffer: 1024 * 1024,
+      timeout: 30000,
+    })
     return JSON.parse(stdout.trim())
   } catch (error) {
     const detail = error.stderr?.trim() || error.message
@@ -415,11 +408,10 @@ $effective = if ($groupPolicy -eq "NotConfigured") { $local } else { $groupPolic
 
   const command = `$applyNormal = $${applyNormal ? "true" : "false"}\n${script}`
   try {
-    const { stdout } = await execFileAsync(
-      "powershell.exe",
-      ["-NoProfile", "-NonInteractive", "-Command", command],
-      { windowsHide: true, maxBuffer: 1024 * 1024, timeout: 30000 },
-    )
+    const { stdout } = await runPowerShellScript(command, {
+      maxBuffer: 1024 * 1024,
+      timeout: 30000,
+    })
     return JSON.parse(stdout.trim())
   } catch (error) {
     const detail = error.stderr?.trim() || error.message

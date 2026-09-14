@@ -1,11 +1,9 @@
-import { execFile } from "node:child_process"
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises"
 import { cpus, homedir } from "node:os"
 import { dirname, join } from "node:path"
 import { setTimeout as delay } from "node:timers/promises"
-import { promisify } from "node:util"
+import { runPowerShellScript } from "./powershell.mjs"
 
-const execFileAsync = promisify(execFile)
 const defaultStatePath = join(
   process.env.LOCALAPPDATA ?? homedir(),
   "nogirem",
@@ -138,11 +136,10 @@ $rss = Get-NetAdapterRss -Name $adapter.Name -ErrorAction Stop
 `
 
   try {
-    const { stdout } = await execFileAsync(
-      "powershell.exe",
-      ["-NoProfile", "-NonInteractive", "-Command", script],
-      { windowsHide: true, maxBuffer: 1024 * 1024, timeout: 30000 },
-    )
+    const { stdout } = await runPowerShellScript(script, {
+      maxBuffer: 1024 * 1024,
+      timeout: 30000,
+    })
     return JSON.parse(stdout.trim())
   } catch (error) {
     const detail = error.stderr?.trim() || error.message

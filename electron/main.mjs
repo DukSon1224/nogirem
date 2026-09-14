@@ -17,6 +17,7 @@ import {
   isSameNetworkInterface,
   restoreFastPingForInterface,
 } from "../src/network.mjs"
+import { runPowerShellScript } from "../src/powershell.mjs"
 import {
   applyNicRssAffinity,
   buildNicRssAffinityPlan,
@@ -439,11 +440,7 @@ async function listBlackboxStorageDrives() {
     "$drives | ConvertTo-Json -Compress",
   ].join("\n")
   try {
-    const { stdout } = await execFileAsync(
-      "powershell.exe",
-      ["-NoProfile", "-NonInteractive", "-Command", script],
-      { windowsHide: true, timeout: 10000 },
-    )
+    const { stdout } = await runPowerShellScript(script, { timeout: 10000 })
     const parsed = JSON.parse(stdout || "[]")
     blackboxStorageDrives = (Array.isArray(parsed) ? parsed : [parsed])
       .map(drive => ({
@@ -1681,11 +1678,7 @@ $found = Get-Process | Where-Object {
 } | Select-Object -First 1
 [bool]$found
 `
-  const { stdout } = await execFileAsync(
-    "powershell.exe",
-    ["-NoProfile", "-NonInteractive", "-Command", script],
-    { windowsHide: true, timeout: 15000 },
-  )
+  const { stdout } = await runPowerShellScript(script, { timeout: 15000 })
   return stdout.trim().toLowerCase() === "true"
 }
 
@@ -2242,11 +2235,7 @@ async function isAdministrator() {
     "$principal = [Security.Principal.WindowsPrincipal]::new($identity)",
     "$principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
   ].join("\n")
-  const { stdout } = await execFileAsync(
-    "powershell.exe",
-    ["-NoProfile", "-NonInteractive", "-Command", script],
-    { windowsHide: true, timeout: 15000 },
-  )
+  const { stdout } = await runPowerShellScript(script, { timeout: 15000 })
   return stdout.trim().toLowerCase() === "true"
 }
 
@@ -2263,14 +2252,8 @@ async function relaunchAsAdministrator() {
     "$ErrorActionPreference = 'Stop'",
     `Start-Process -FilePath ${quotePowerShellLiteral(process.execPath)} -ArgumentList @(${argumentList}) -Verb RunAs -WorkingDirectory ${quotePowerShellLiteral(workingDirectory)}`,
   ].join("\n")
-  const encodedCommand = Buffer.from(script, "utf16le").toString("base64")
-
   try {
-    await execFileAsync(
-      "powershell.exe",
-      ["-NoProfile", "-NonInteractive", "-EncodedCommand", encodedCommand],
-      { windowsHide: true, timeout: 120000 },
-    )
+    await runPowerShellScript(script, { timeout: 120000 })
   } catch {
     throw new Error("관리자 권한이 필요합니다. UAC 요청을 승인한 뒤 다시 실행하세요")
   }
@@ -2288,11 +2271,7 @@ async function readStartupTrayTaskState() {
     "$action = @($task.Actions)[0]",
     `[pscustomobject]@{ exists = $true; enabled = $task.State -ne 'Disabled'; matches = ($action.Execute -ieq ${quotePowerShellLiteral(process.execPath)} -and $action.Arguments -eq '--startup-tray'); preferred = $preferred } | ConvertTo-Json -Compress`,
   ].join("\n")
-  const { stdout } = await execFileAsync(
-    "powershell.exe",
-    ["-NoProfile", "-NonInteractive", "-Command", script],
-    { windowsHide: true, timeout: 15000 },
-  )
+  const { stdout } = await runPowerShellScript(script, { timeout: 15000 })
   return JSON.parse(stdout.trim())
 }
 
@@ -2317,11 +2296,7 @@ async function applyStartupTraySetting(enabled) {
         "}",
         `Remove-ItemProperty -Path ${quotePowerShellLiteral(startupTrayRegistryPath)} -Name 'StartupTrayEnabled' -ErrorAction SilentlyContinue`,
       ].join("\n")
-  await execFileAsync(
-    "powershell.exe",
-    ["-NoProfile", "-NonInteractive", "-Command", script],
-    { windowsHide: true, timeout: 30000 },
-  )
+  await runPowerShellScript(script, { timeout: 30000 })
 }
 
 async function getStartupTraySetting() {
@@ -4290,6 +4265,20 @@ async function ensureBlackboxStarted() {
   throw lastError
 }
 
+async function launchDetachedElectronHelper(helperArguments) {
+  const child = spawn(process.execPath, helperArguments, {
+    cwd: app.isPackaged ? dirname(process.execPath) : root,
+    detached: true,
+    stdio: "ignore",
+    windowsHide: true,
+  })
+  await new Promise((resolve, reject) => {
+    child.once("spawn", resolve)
+    child.once("error", reject)
+  })
+  child.unref()
+}
+
 async function launchMemoryHelper({ purgeOnStart = false } = {}) {
   const paths = getMemoryPaths()
   await mkdir(dirname(paths.statusPath), { recursive: true })
@@ -4306,20 +4295,9 @@ async function launchMemoryHelper({ purgeOnStart = false } = {}) {
     `--purge-on-start=${purgeOnStart}`,
   ]
   if (!app.isPackaged) helperArguments.unshift(root)
-  const argumentList = helperArguments.map(quoteProcessArgument).join(", ")
-  const script = [
-    "$ErrorActionPreference = 'Stop'",
-    `$process = Start-Process -FilePath ${quotePowerShellLiteral(process.execPath)} -ArgumentList @(${argumentList}) -WindowStyle Hidden -PassThru`,
-    "$process.Id",
-  ].join("\n")
-  const encodedCommand = Buffer.from(script, "utf16le").toString("base64")
 
   try {
-    await execFileAsync(
-      "powershell.exe",
-      ["-NoProfile", "-NonInteractive", "-EncodedCommand", encodedCommand],
-      { windowsHide: true, timeout: 120000 },
-    )
+    await launchDetachedElectronHelper(helperArguments)
   } catch {
     throw new Error("메모리 최적화 helper 실행에 실패했습니다")
   }
@@ -4397,32 +4375,7 @@ async function launchAffinityHelper(includeNic, inheritedNicManaged = false) {
   if (!app.isPackaged) helperArguments.unshift(root)
 
   try {
-    if (app.isPackaged) {
-      const argumentList = helperArguments.map(quoteProcessArgument).join(", ")
-      const script = [
-        "$ErrorActionPreference = 'Stop'",
-        `$process = Start-Process -FilePath ${quotePowerShellLiteral(process.execPath)} -ArgumentList @(${argumentList}) -WindowStyle Hidden -WorkingDirectory ${quotePowerShellLiteral(dirname(process.execPath))} -PassThru`,
-        "$process.Id",
-      ].join("\n")
-      const encodedCommand = Buffer.from(script, "utf16le").toString("base64")
-      await execFileAsync(
-        "powershell.exe",
-        ["-NoProfile", "-NonInteractive", "-EncodedCommand", encodedCommand],
-        { windowsHide: true, timeout: 120000 },
-      )
-    } else {
-      const child = spawn(process.execPath, helperArguments, {
-        cwd: root,
-        detached: true,
-        stdio: "ignore",
-        windowsHide: true,
-      })
-      await new Promise((resolve, reject) => {
-        child.once("spawn", resolve)
-        child.once("error", reject)
-      })
-      child.unref()
-    }
+    await launchDetachedElectronHelper(helperArguments)
   } catch {
     throw new Error("Affinity helper 실행에 실패했습니다")
   }
@@ -5297,11 +5250,10 @@ async function readRecentWindowsFailureEvents() {
     "})",
     "$result | ConvertTo-Json -Compress -Depth 3",
   ].join("\n")
-  const { stdout } = await execFileAsync(
-    "powershell.exe",
-    ["-NoProfile", "-NonInteractive", "-Command", script],
-    { windowsHide: true, timeout: 15000, maxBuffer: 2 * 1024 * 1024 },
-  )
+  const { stdout } = await runPowerShellScript(script, {
+    timeout: 15000,
+    maxBuffer: 2 * 1024 * 1024,
+  })
   const parsed = JSON.parse(stdout || "[]")
   return Array.isArray(parsed) ? parsed : [parsed]
 }
