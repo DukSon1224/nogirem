@@ -264,19 +264,23 @@ test("Realtek 네트워크 가속 필터는 차단하고 해제 방법을 안내
   )
 })
 
-test("IP·기본 경로·게이트웨이·DNS·HTTPS가 모두 정상이면 연결 정상으로 판정한다", async () => {
-  const result = await checkNetworkConnectivity({
-    runner: async () => ({
-      validIpv4: true,
-      defaultRoute: true,
-      gateway: true,
-      dns: true,
-      https: true,
-    }),
-  })
+test("IP·기본 경로·게이트웨이와 DNS 또는 HTTPS가 정상이면 연결 정상으로 판정한다", async () => {
+  for (const externalStatus of [
+    { dns: true, https: false },
+    { dns: false, https: true },
+  ]) {
+    const result = await checkNetworkConnectivity({
+      runner: async () => ({
+        validIpv4: true,
+        defaultRoute: true,
+        gateway: true,
+        ...externalStatus,
+      }),
+    })
 
-  assert.equal(result.healthy, true)
-  assert.equal(result.attempts, 1)
+    assert.equal(result.healthy, true)
+    assert.equal(result.attempts, 1)
+  }
 })
 
 test("연결 검사 실패는 지정 횟수만큼 재시도한다", async () => {
@@ -450,4 +454,16 @@ test("패스트핑 원본 기록과 기록 없는 기본값 복원이 IPC와 UI�
   assert.match(applicationView, /TCP 자동 조정은 유지합니다/)
   assert.match(applicationView, /앱 시작 시 연결을 검사하며 이상이 반복되면 원래 설정으로 자동 복원/)
   assert.match(applicationStyles, /\.detail-restore/)
+})
+
+test("관리자 네트워크 helper는 PowerShell 중계 없이 직접 실행하고 내부 명령 시간을 제한한다", () => {
+  const helperStart = electronMain.indexOf("async function runElevatedOptimization(")
+  const helperEnd = electronMain.indexOf("async function optimizeNetworkDirect()", helperStart)
+  const helperSource = electronMain.slice(helperStart, helperEnd)
+
+  assert.match(helperSource, /execFileAsync\(\s*process\.execPath,\s*helperArguments,/)
+  assert.match(helperSource, /timeout: 240000/)
+  assert.match(helperSource, /executionError\?\.stderr/)
+  assert.doesNotMatch(helperSource, /Start-Process|powershell\.exe/)
+  assert.equal(networkSource.match(/timeout: 30000/g)?.length, 4)
 })

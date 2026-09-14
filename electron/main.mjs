@@ -4784,34 +4784,38 @@ async function runElevatedOptimization(
   const helperArguments = app.isPackaged
     ? [helperFlag, `--output=${outputPath}`, ...extraArguments]
     : [root, helperFlag, `--output=${outputPath}`, ...extraArguments]
-  const argumentList = helperArguments.map(quoteProcessArgument).join(", ")
-  const script = [
-    "$ErrorActionPreference = 'Stop'",
-    `$process = Start-Process -FilePath ${quotePowerShellLiteral(process.execPath)} -ArgumentList @(${argumentList}) -Wait -PassThru`,
-    "exit $process.ExitCode",
-  ].join("\n")
-  const encodedCommand = Buffer.from(script, "utf16le").toString("base64")
-
+  let executionError = null
   try {
     await execFileAsync(
-      "powershell.exe",
-      ["-NoProfile", "-NonInteractive", "-EncodedCommand", encodedCommand],
-      { windowsHide: true, timeout: 120000 },
+      process.execPath,
+      helperArguments,
+      {
+        windowsHide: true,
+        timeout: 240000,
+        maxBuffer: 1024 * 1024,
+      },
     )
   } catch (error) {
-    try {
-      const payload = JSON.parse(await readFile(outputPath, "utf8"))
-      if (!payload.ok) throw new Error(payload.error?.message ?? failureMessage)
-    } catch (resultError) {
-      if (resultError.code === "ENOENT") {
-        throw new Error("관리자 helper 실행에 실패했습니다")
-      }
-      throw resultError
-    }
+    executionError = error
   }
 
   try {
-    const payload = JSON.parse(await readFile(outputPath, "utf8"))
+    let payload
+    try {
+      payload = JSON.parse(await readFile(outputPath, "utf8"))
+    } catch (resultError) {
+      if (resultError.code === "ENOENT") {
+        const detail = executionError?.killed
+          ? "실행 제한 시간 240초를 초과했습니다"
+          : (executionError?.stderr?.trim() || executionError?.message)
+        throw new Error(
+          detail
+            ? `관리자 helper 실행에 실패했습니다: ${detail}`
+            : "관리자 helper가 결과 파일을 만들지 못했습니다",
+        )
+      }
+      throw resultError
+    }
     if (!payload.ok) throw new Error(payload.error?.message ?? failureMessage)
     return payload.data
   } finally {

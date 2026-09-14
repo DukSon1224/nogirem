@@ -139,7 +139,7 @@ async function runPowerShell(applyFastPing) {
     const { stdout } = await execFileAsync(
       "powershell.exe",
       ["-NoProfile", "-NonInteractive", "-Command", script],
-      { windowsHide: true, maxBuffer: 1024 * 1024 },
+      { windowsHide: true, maxBuffer: 1024 * 1024, timeout: 30000 },
     )
     return JSON.parse(stdout.trim())
   } catch (error) {
@@ -245,8 +245,7 @@ export async function checkNetworkConnectivity({
       current?.validIpv4
       && current?.defaultRoute
       && current?.gateway
-      && current?.dns
-      && current?.https,
+      && (current?.dns || current?.https),
     )
     if (healthy) {
       return { healthy: true, attempts: attempt + 1, current }
@@ -325,7 +324,7 @@ $adapter = Get-NetAdapter -IncludeHidden -ErrorAction SilentlyContinue |
     const { stdout } = await execFileAsync(
       "powershell.exe",
       ["-NoProfile", "-NonInteractive", "-Command", script],
-      { windowsHide: true, maxBuffer: 1024 * 1024 },
+      { windowsHide: true, maxBuffer: 1024 * 1024, timeout: 30000 },
     )
     return JSON.parse(stdout.trim())
   } catch (error) {
@@ -374,7 +373,7 @@ if ($adapter.Status -ne "Up") {
     const { stdout } = await execFileAsync(
       "powershell.exe",
       ["-NoProfile", "-NonInteractive", "-Command", script],
-      { windowsHide: true, maxBuffer: 1024 * 1024 },
+      { windowsHide: true, maxBuffer: 1024 * 1024, timeout: 30000 },
     )
     return JSON.parse(stdout.trim())
   } catch (error) {
@@ -419,7 +418,7 @@ $effective = if ($groupPolicy -eq "NotConfigured") { $local } else { $groupPolic
     const { stdout } = await execFileAsync(
       "powershell.exe",
       ["-NoProfile", "-NonInteractive", "-Command", command],
-      { windowsHide: true, maxBuffer: 1024 * 1024 },
+      { windowsHide: true, maxBuffer: 1024 * 1024, timeout: 30000 },
     )
     return JSON.parse(stdout.trim())
   } catch (error) {
