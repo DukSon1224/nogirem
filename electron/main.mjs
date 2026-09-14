@@ -14,6 +14,7 @@ import {
   checkNetworkConnectivity,
   ensureFastPingForPrimaryInterface,
   ensureTcpAutoTuningNormal,
+  isSameNetworkInterface,
   restoreFastPingForInterface,
 } from "../src/network.mjs"
 import {
@@ -4835,7 +4836,7 @@ async function optimizeNetworkDirect() {
   if (
     beforeFastPing.supported !== false
     && !beforeFastPing.configured
-    && !(await readJson(statePath))
+    && !isSameNetworkInterface(await readJson(statePath), beforeFastPing.current)
   ) {
     const before = beforeFastPing.current
     await writeJsonAtomic(statePath, {
@@ -4859,7 +4860,10 @@ async function optimizeNetworkDirect() {
   })
   if (!connectivity.healthy && fastPing.configured) {
     const savedState = await readJson(statePath)
-    const target = typeof savedState?.interfaceGuid === "string"
+    const target = (
+      typeof savedState?.interfaceGuid === "string"
+      && isSameNetworkInterface(savedState, fastPing.current)
+    )
       ? savedState
       : {
           interfaceAlias: fastPing.current.interfaceAlias,
@@ -4927,7 +4931,10 @@ async function restoreNetworkDirect() {
     }
   }
   const current = beforeFastPing.current
-  const target = hasSavedTarget
+  const savedTargetMatchesCurrent = hasSavedTarget
+    && current
+    && isSameNetworkInterface(savedState, current)
+  const target = savedTargetMatchesCurrent || !current
     ? savedState
     : {
         interfaceAlias: current.interfaceAlias,
@@ -4937,7 +4944,7 @@ async function restoreNetworkDirect() {
         TCPNoDelay: null,
       }
   const fastPing = await restoreFastPingForInterface(target, {
-    restartAfterRestore: true,
+    restartAfterRestore: Boolean(current),
   })
   await unlink(statePath).catch(() => {})
   const tcpAutoTuning = await ensureTcpAutoTuningNormal()
@@ -4946,7 +4953,8 @@ async function restoreNetworkDirect() {
     tcpAutoTuning,
     originalStateRecorded: hasSavedTarget,
     restored: true,
-    restoredFromRecord: hasSavedTarget,
+    restoredFromRecord: Boolean(savedTargetMatchesCurrent || (!current && hasSavedTarget)),
+    staleOriginalState: Boolean(hasSavedTarget && current && !savedTargetMatchesCurrent),
     optimized: fastPing.configured && tcpAutoTuning.optimized,
   }
 }

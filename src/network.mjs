@@ -437,6 +437,21 @@ export function isTcpAutoTuningNormal(status) {
   return String(status.effective).toLowerCase() === "normal"
 }
 
+export function isSameNetworkInterface(left, right) {
+  const normalizeGuid = value => String(value ?? "")
+    .trim()
+    .replaceAll(/[{}]/g, "")
+    .toLowerCase()
+  const leftGuid = normalizeGuid(left?.interfaceGuid)
+  const rightGuid = normalizeGuid(right?.interfaceGuid)
+  if (leftGuid && rightGuid) return leftGuid === rightGuid
+  const leftIndex = Number(left?.interfaceIndex)
+  const rightIndex = Number(right?.interfaceIndex)
+  return Number.isInteger(leftIndex)
+    && leftIndex > 0
+    && leftIndex === rightIndex
+}
+
 export async function ensureTcpAutoTuningNormal({
   applyChanges = false,
   runner = runAutoTuningPowerShell,

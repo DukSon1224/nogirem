@@ -6,6 +6,7 @@ import {
   ensureFastPingForPrimaryInterface,
   ensureTcpAutoTuningNormal,
   isFastPingConfigured,
+  isSameNetworkInterface,
   isTcpAutoTuningNormal,
   restoreFastPingForInterface,
   restartPrimaryNetworkInterface,
@@ -46,6 +47,17 @@ test("두 레지스트리 값이 1이면 패스트핑 적용 상태로 판정한
     TcpAckFrequency: 1,
     TCPNoDelay: null,
   }), false)
+})
+
+test("네트워크 인터페이스는 변경 가능한 인덱스보다 GUID로 식별한다", () => {
+  assert.equal(isSameNetworkInterface(
+    { interfaceGuid: "{A0000000-0000-4000-8000-000000000001}", interfaceIndex: 12 },
+    { interfaceGuid: "a0000000-0000-4000-8000-000000000001", interfaceIndex: 13 },
+  ), true)
+  assert.equal(isSameNetworkInterface(
+    { interfaceGuid: "{A0000000-0000-4000-8000-000000000001}", interfaceIndex: 12 },
+    { interfaceGuid: "{B0000000-0000-4000-8000-000000000002}", interfaceIndex: 12 },
+  ), false)
 })
 
 test("이미 적용된 경우 레지스트리를 다시 쓰지 않는다", async () => {
@@ -416,12 +428,13 @@ test("그룹 정책이 Normal 이외의 값을 강제하면 복구 실패로 처
 test("패스트핑 원본 기록과 기록 없는 기본값 복원이 IPC와 UI에 연결된다", () => {
   assert.match(
     electronMain,
-    /async function optimizeNetworkDirect\(\)[\s\S]*beforeFastPing[\s\S]*writeJsonAtomic\(statePath,[\s\S]*TcpAckFrequency: before\.TcpAckFrequency \?\? null/,
+    /async function optimizeNetworkDirect\(\)[\s\S]*isSameNetworkInterface\(await readJson\(statePath\), beforeFastPing\.current\)[\s\S]*writeJsonAtomic\(statePath,[\s\S]*TcpAckFrequency: before\.TcpAckFrequency \?\? null/,
   )
   assert.match(
     electronMain,
-    /const target = hasSavedTarget[\s\S]*TcpAckFrequency: null,[\s\S]*TCPNoDelay: null/,
+    /const savedTargetMatchesCurrent = hasSavedTarget[\s\S]*isSameNetworkInterface\(savedState, current\)[\s\S]*const target = savedTargetMatchesCurrent \|\| !current[\s\S]*TcpAckFrequency: null,[\s\S]*TCPNoDelay: null/,
   )
+  assert.match(electronMain, /staleOriginalState: Boolean\(hasSavedTarget && current && !savedTargetMatchesCurrent\)/)
   assert.match(
     electronMain,
     /async function restoreNetworkDirect\(\)[\s\S]*ensureTcpAutoTuningNormal\(\)/,
