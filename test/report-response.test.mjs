@@ -109,6 +109,8 @@ test("REPORT 조회와 모달이 시작 및 업데이트 확인에 연결된다"
       "bb7e3120-d921-41c7-befd-cca75357079b",
       "24a8f331-8892-4ec0-9b59-d5ddd014fd92",
       "bbfcb8c1-1ce0-4cae-9a72-58d739ea1a87",
+      "ccfa3f7b-5375-4fe6-93f1-4b805ce734fa",
+      "6cfda0f1-9a8e-4a90-b0ed-4515c557f5e8",
     ],
   )
 })
