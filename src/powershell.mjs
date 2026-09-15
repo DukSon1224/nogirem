@@ -10,7 +10,12 @@ export function runPowerShellScript(
   return new Promise((resolve, reject) => {
     const child = spawn(
       "powershell.exe",
-      ["-NoProfile", "-NonInteractive", "-Command", "-"],
+      [
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        "[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);$reader=[IO.StreamReader]::new([Console]::OpenStandardInput(),[Text.UTF8Encoding]::new($false),$false);& ([ScriptBlock]::Create($reader.ReadToEnd()))",
+      ],
       {
         windowsHide: true,
         stdio: ["pipe", "pipe", "pipe"],

@@ -13,7 +13,7 @@ const [powerShellSource, mainSource, networkSource, nicSource] = await Promise.a
 test("런타임 PowerShell 본문은 명령줄 대신 표준입력으로 전달한다", () => {
   assert.match(
     powerShellSource,
-    /\["-NoProfile", "-NonInteractive", "-Command", "-"\]/,
+    /\[IO\.StreamReader\]::new\(\[Console\]::OpenStandardInput\(\),\[Text\.UTF8Encoding\]::new\(\$false\),\$false\)/,
   )
   assert.match(powerShellSource, /child\.stdin\.end\(String\(script\), "utf8"\)/)
   assert.doesNotMatch(mainSource, /powershell\.exe|-EncodedCommand/)
@@ -40,6 +40,21 @@ test("PowerShell 표준입력 실행 결과를 UTF-8로 반환한다", {
     "[Console]::OutputEncoding = [Text.UTF8Encoding]::new(); Write-Output 123",
   )
   assert.equal(stdout.trim(), "123")
+})
+
+test("여러 줄 PowerShell 본문을 하나의 스크립트 블록으로 실행한다", {
+  skip: process.platform !== "win32",
+}, async () => {
+  const { stdout } = await runPowerShellScript(`
+function Get-TestValue {
+  return "특수 네트워크 환경"
+}
+$value = Get-TestValue
+[pscustomobject]@{
+  value = $value
+} | ConvertTo-Json -Compress
+`)
+  assert.deepEqual(JSON.parse(stdout), { value: "특수 네트워크 환경" })
 })
 
 test("PowerShell 표준입력 실행이 제한 시간을 넘으면 종료한다", {
