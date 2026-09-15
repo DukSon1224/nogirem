@@ -1,12 +1,13 @@
 # Cursor AI Handoff
 
-Last Updated: 2026-09-15 10:35
+Last Updated: 2026-09-15 10:38
 
 ## Current Objective
-0.3.13 네트워크 PowerShell 표준입력 회귀 수정본을 배포한다.
+0.3.13 배포를 완료하고 실제 사용자 환경의 수정 결과를 확인한다.
 
 ## Current Status
-- 네 건의 0.3.12 진단 UUID에 `패스트핑·TCP 설정 오류 확인 및 수정` REPORT 답변을 추가했다. 공통 원인, Windows 시작 트레이 설정도 영향받았다는 사실, 0.3.13 업데이트 후 두 설정을 다시 켜는 절차를 안내하며 제보자 이름·이메일은 기록하지 않았다. 앱과 lockfile 버전을 0.3.13으로 올리고 Windows x64 NSIS 설치본을 생성했다. 전체 Node 테스트 167개와 네이티브 helper·프로덕션 앱 빌드가 통과했다. 설치본은 96,996,759바이트·SHA-256 `2C4502C0…B8E74`, blockmap은 102,824바이트·`A191B178…E8C4F`, `latest.yml`은 345바이트·`12F560CC…1BAA`, 터보 키 helper는 291,840바이트·`D9504362…16A857`이다. 설치본·ASAR 앱 버전은 0.3.13이며 ASAR에 네 REPORT 답변과 UTF-8 StreamReader PowerShell 실행기가 포함되고 `-EncodedCommand`는 없다. 패키지 내부 input guard·Radeon·recorder helper와 별도 터보 키 자산은 빌드 산출물 SHA-256과 모두 일치한다. recorder 최종 빌드 해시는 `E1E988BF…EAF77`이다. GitHub 태그·Release 게시와 원격 push는 아직 하지 않았다.
+- 배포 커밋 `d29ec18`과 태그 `v0.3.13`을 원격에 푸시하고 [GitHub Release](https://github.com/rubystarashe/nogirem/releases/tag/v0.3.13)로 정식 공개했다. release는 draft·prerelease가 아니며 GitHub 최신 릴리스도 v0.3.13이다. installer·blockmap·`latest.yml`·터보 키 helper 네 자산의 GitHub 크기와 SHA-256 digest가 로컬 검증값과 모두 일치하고 모두 uploaded 상태다. 배포 시점 원격 `master`, 태그와 Release 커밋은 `d29ec18`로 일치한다.
+- 네 건의 0.3.12 진단 UUID에 `패스트핑·TCP 설정 오류 확인 및 수정` REPORT 답변을 추가했다. 공통 원인, Windows 시작 트레이 설정도 영향받았다는 사실, 0.3.13 업데이트 후 두 설정을 다시 켜는 절차를 안내하며 제보자 이름·이메일은 기록하지 않았다. 앱과 lockfile 버전을 0.3.13으로 올리고 Windows x64 NSIS 설치본을 생성했다. 전체 Node 테스트 167개와 네이티브 helper·프로덕션 앱 빌드가 통과했다. 설치본은 96,996,759바이트·SHA-256 `2C4502C0…B8E74`, blockmap은 102,824바이트·`A191B178…E8C4F`, `latest.yml`은 345바이트·`12F560CC…1BAA`, 터보 키 helper는 291,840바이트·`D9504362…16A857`이다. 설치본·ASAR 앱 버전은 0.3.13이며 ASAR에 네 REPORT 답변과 UTF-8 StreamReader PowerShell 실행기가 포함되고 `-EncodedCommand`는 없다. 패키지 내부 input guard·Radeon·recorder helper와 별도 터보 키 자산은 빌드 산출물 SHA-256과 모두 일치한다. recorder 최종 빌드 해시는 `E1E988BF…EAF77`이다.
 - 서로 다른 네 건의 0.3.12 진단에서 패스트핑 조회가 모두 `Unexpected end of JSON input`으로 실패했고, 화면에는 TCP 자동 조정과 자동 복원도 같은 오류가 표시됐다. 각 환경의 시작 로그에도 `application:get-startup-tray-setting` PowerShell 종료 코드 1이 반복돼 공통 실행기 회귀로 확정했다. 0.3.12의 `powershell.exe -Command -`는 여러 줄 표준입력을 한 줄씩 처리하고 한국어 UTF-8 본문을 시스템 코드 페이지로 읽어 함수·조건문 스크립트가 JSON을 출력하지 못했다. 명령줄에는 고정된 짧은 UTF-8 bootstrap만 두고, 원시 표준입력을 UTF-8 StreamReader로 끝까지 읽은 다음 전체 본문을 하나의 ScriptBlock으로 파싱해 실행하도록 변경했다. 동적 스크립트는 여전히 명령줄에 노출되지 않는다. 현재 PC의 실제 패스트핑과 TCP 자동 조정 조회가 정상 JSON을 반환했고, 시작 트레이 작업이 없을 때 JSON을 출력한 뒤 `exit 0`으로 끝나는 분기도 동일 실행기로 검증했다. 전체 Node 테스트 167개, 구문 검사, 프로덕션 앱 빌드와 lint가 통과했으며 0.3.13 변경 기록에 반영했다.
 - 커밋 `4ac9028`과 태그 `v0.3.12`를 원격에 푸시하고 [GitHub Release](https://github.com/rubystarashe/nogirem/releases/tag/v0.3.12)로 정식 공개했다. release는 draft·prerelease가 아니며 installer·blockmap·`latest.yml`·터보 키 helper 네 자산의 GitHub 크기와 SHA-256 digest가 로컬 검증값과 모두 일치한다. 네 공개 URL은 HTTP 200과 정확한 Content-Length를 반환했고 배포 시점 원격 `master`, 태그와 Release 커밋은 `4ac9028`로 일치했다.
 - 네트워크 복원·helper 안정화·백신 명령줄 대응과 REPORT 답변 여섯 건을 포함해 0.3.12 Windows x64 NSIS 설치본을 다시 생성했다. 전체 Node 테스트 166개와 네이티브 helper·프로덕션 앱 빌드가 통과했다. 설치본은 96,962,821바이트·SHA-256 `8ED84AE8…8D75FC`, blockmap은 102,425바이트·`AE199651…0D76C2`, `latest.yml`은 345바이트·`FC54E12A…2B0CDF`, 터보 키 helper는 291,840바이트·`D9504362…16A857`이다. 설치본·ASAR 앱 버전은 0.3.12이며 ASAR에서 `-EncodedCommand`와 inline PowerShell 명령이 제거되고 표준입력 runner가 포함된 것을 확인했다. 패키지 내부 input guard·Radeon·recorder helper와 별도 터보 키 자산은 빌드 산출물 SHA-256과 각각 일치한다. recorder 최종 빌드 해시는 `2C4A959E…D0AED7`이다.
@@ -1553,4 +1554,4 @@ Last Updated: 2026-09-15 10:35
 - 정확 재인코딩의 첫 PCM sample 내부에서 요청 시점 전 frame을 제거해 AAC frame 경계의 최대 약 21ms 선행도 없앴다. 실제 비정렬 시작점 추출은 통과했지만 실행 중 recorder 잠금 때문에 배포용 local bin 갱신은 남아 있다.
 
 ## Next Recommended Step
-0.3.13 배포 커밋과 태그를 원격에 푸시하고 GitHub Release 자산을 게시한 뒤 네 제보 환경에서 패스트핑·TCP 자동 조정·시작 트레이 설정 조회를 재확인한다.
+네 제보 환경에서 0.3.13 업데이트 후 패스트핑·TCP 자동 조정·Windows 시작 트레이 설정 조회가 정상화됐는지 재확인한다.
