@@ -50,9 +50,13 @@ function Get-TestValue {
   return "특수 네트워크 환경"
 }
 $value = Get-TestValue
-[pscustomobject]@{
-  value = $value
-} | ConvertTo-Json -Compress
+if ($value) {
+  [pscustomobject]@{
+    value = $value
+  } | ConvertTo-Json -Compress
+  exit 0
+}
+throw "결과 없음"
 `)
   assert.deepEqual(JSON.parse(stdout), { value: "특수 네트워크 환경" })
 })
