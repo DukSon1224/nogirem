@@ -1,12 +1,13 @@
 # Cursor AI Handoff
 
-Last Updated: 2026-09-15 09:10
+Last Updated: 2026-09-15 09:13
 
 ## Current Objective
-0.3.12 최종 Windows 패키지를 검증하고 GitHub Release로 배포한다.
+0.3.12 배포를 완료하고 실제 사용자 환경의 수정 결과를 확인한다.
 
 ## Current Status
-- 네트워크 복원·helper 안정화·백신 명령줄 대응과 REPORT 답변 여섯 건을 포함해 0.3.12 Windows x64 NSIS 설치본을 다시 생성했다. 전체 Node 테스트 166개와 네이티브 helper·프로덕션 앱 빌드가 통과했다. 설치본은 96,962,821바이트·SHA-256 `8ED84AE8…8D75FC`, blockmap은 102,425바이트·`AE199651…0D76C2`, `latest.yml`은 345바이트·`FC54E12A…2B0CDF`, 터보 키 helper는 291,840바이트·`D9504362…16A857`이다. 설치본·ASAR 앱 버전은 0.3.12이며 ASAR에서 `-EncodedCommand`와 inline PowerShell 명령이 제거되고 표준입력 runner가 포함된 것을 확인했다. 패키지 내부 input guard·Radeon·recorder helper와 별도 터보 키 자산은 빌드 산출물 SHA-256과 각각 일치한다. recorder 최종 빌드 해시는 `2C4A959E…D0AED7`이다. 아직 원격 푸시·태그·Release 게시는 하지 않았다.
+- 커밋 `4ac9028`과 태그 `v0.3.12`를 원격에 푸시하고 [GitHub Release](https://github.com/rubystarashe/nogirem/releases/tag/v0.3.12)로 정식 공개했다. release는 draft·prerelease가 아니며 installer·blockmap·`latest.yml`·터보 키 helper 네 자산의 GitHub 크기와 SHA-256 digest가 로컬 검증값과 모두 일치한다. 네 공개 URL은 HTTP 200과 정확한 Content-Length를 반환했고 배포 시점 원격 `master`, 태그와 Release 커밋은 `4ac9028`로 일치했다.
+- 네트워크 복원·helper 안정화·백신 명령줄 대응과 REPORT 답변 여섯 건을 포함해 0.3.12 Windows x64 NSIS 설치본을 다시 생성했다. 전체 Node 테스트 166개와 네이티브 helper·프로덕션 앱 빌드가 통과했다. 설치본은 96,962,821바이트·SHA-256 `8ED84AE8…8D75FC`, blockmap은 102,425바이트·`AE199651…0D76C2`, `latest.yml`은 345바이트·`FC54E12A…2B0CDF`, 터보 키 helper는 291,840바이트·`D9504362…16A857`이다. 설치본·ASAR 앱 버전은 0.3.12이며 ASAR에서 `-EncodedCommand`와 inline PowerShell 명령이 제거되고 표준입력 runner가 포함된 것을 확인했다. 패키지 내부 input guard·Radeon·recorder helper와 별도 터보 키 자산은 빌드 산출물 SHA-256과 각각 일치한다. recorder 최종 빌드 해시는 `2C4A959E…D0AED7`이다.
 - 패스트핑 helper 시간 초과 진단과 백신 PowerShell 명령줄 차단 진단의 UUID별 답변을 `REPORT.json`에 추가했다. 첫 답변은 과도한 연결 판정과 helper 결과 누락 원인, 0.3.12의 DNS·HTTPS 대체 판정과 직접 helper 실행·구체적 오류 표시를 안내한다. 두 번째 답변은 긴 PowerShell 명령줄 차단이 패스트핑과 메모리 helper를 막았다는 분석, 0.3.12의 표준입력 runner와 PowerShell 없는 helper 실행, 별도 명령줄 예외 없이 재확인하는 절차를 안내한다. 제보자 이름·이메일은 기록하지 않았고 REPORT 테스트 4개와 lint가 통과했다. 아직 원격에는 게시하지 않았다.
 - 0.3.11 백신 차단 진단은 정상 물리 Realtek 어댑터에 차단 필터가 없고 패스트핑 값도 미설정이었지만, 긴 `powershell.exe -Command ...`·`-EncodedCommand ...`가 `IDP.HELU.PSE90`으로 차단됐다. 네트워크 적용은 결과 JSON이 생성되지 않아 반복 ENOENT로 끝났고 메모리 helper도 매 앱 실행마다 15초 안에 시작하지 못해 프레임 부스트가 중단됐다. 사용자에게 긴 명령줄 전체를 백신 예외로 등록하도록 요구하는 방식은 실용적이지 않다. 런타임 PowerShell은 동적 본문을 명령줄에서 제거하고 고정된 `powershell.exe -NoProfile -NonInteractive -Command -`의 표준입력으로 보내는 공통 runner로 통합했다. 메모리·affinity·네트워크 Electron helper는 PowerShell 중계 없이 관리자 앱에서 직접 분리 실행한다. main·network·NIC 런타임 코드에는 긴 PowerShell 명령줄과 `-EncodedCommand`가 남지 않았다. PowerShell 실제 UTF-8 출력·시간 초과 테스트를 포함한 전체 Node 테스트 166개, 변경 모듈 구문 검사, 프로덕션 앱 빌드와 lint가 통과했다. 0.3.12 변경 기록에 반영했으며 실제 해당 백신 환경 재검증과 재패키징이 필요하다.
 - 0.3.11 패스트핑 적용 진단은 Killer E2600 물리 이더넷·호환 가능한 nProtect 바인딩 환경이며 `TcpAckFrequency`와 `TCPNoDelay`는 모두 미설정이었다. 첫 적용은 helper가 정상 실행됐지만 HTTPS·DNS를 모두 요구하는 사전 검사에서 `현재 인터넷 연결이 정상적이지 않다`고 오판해 중단됐다. 이후 세 번은 helper 시작 기록 없이 결과 파일이 누락됐고, 앱 재시작 후 시도는 helper가 시작됐지만 120초 안에 결과를 쓰지 못해 모두 실제 원인 대신 `관리자 helper 실행에 실패했습니다`로 표시됐다. 이미 관리자 권한인 앱에서 네트워크 helper를 PowerShell `Start-Process`로 중계하지 않고 직접 실행하며 240초까지 기다리고, 결과 파일이 없으면 실제 실행 오류나 시간 초과를 표시하도록 변경했다. 패스트핑 조회·복원·어댑터 재시작·TCP 자동 조정 PowerShell에는 각각 30초 제한을 추가했다. 유효 IP·기본 경로·게이트웨이에 DNS 또는 HTTPS 중 하나가 성공하면 정상 연결로 판정한다. 네트워크 테스트 24개, 전체 Node 테스트 162개, 구문 검사, 프로덕션 앱 빌드, lint와 현재 PC 실제 연결 검사가 통과했다. 0.3.12 변경 기록에 반영했으며 기존 설치본은 이 수정 전 산출물이라 재패키징해야 한다. 같은 진단에서 affinity helper도 앱 시작 직후 한 번 실패했으나 이후 정상 실행됐으며 이번 변경 범위에는 포함하지 않았다.
@@ -1550,4 +1551,4 @@ Last Updated: 2026-09-15 09:10
 - 정확 재인코딩의 첫 PCM sample 내부에서 요청 시점 전 frame을 제거해 AAC frame 경계의 최대 약 21ms 선행도 없앴다. 실제 비정렬 시작점 추출은 통과했지만 실행 중 recorder 잠금 때문에 배포용 local bin 갱신은 남아 있다.
 
 ## Next Recommended Step
-0.3.12를 다시 패키징해 네트워크 복원 수정이 포함된 ASAR와 설치본 무결성을 검증한 뒤 배포한다.
+0.3.12에서 패스트핑 적용·되돌리기와 `IDP.HELU.PSE90` 백신 환경의 부스트 시작을 재확인한다.
